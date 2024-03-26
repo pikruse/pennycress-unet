@@ -11,26 +11,47 @@ from PIL import Image
 
 class UNet(torch.nn.Module):
 
+    '''
+    Builds u-net, an encoder-decoder architecture for segmentation.
+    
+    Args:
+        layer_sizes (list): list of integers representing the number of channels in each layer, where the length of the list is the number of layers
+        in_channels (int): number of channels in input images
+        out_channels (int): number of channels in output segmentations
+        dropout_rate (float): dropout rate for dropout layers
+        conv_per_block (int): number of convolutional layers per block
+        hidden_activation (torch.nn.Module): activation function for hidden layers
+        output_activation (torch.nn.Module): activation function for output layer
+
+    Inputs:
+        batch (tensor of size (B, in_channels, H, W)): batch of input images
+    
+    Returns:
+        batch (tensor of size (B, out_channels, H, W)): batch of output segmentations
+    '''
+
     def __init__(self,
-                enc_layer_sizes = [16, 32, 64, 128],
-                dec_layer_sizes = [128, 64, 32, 16],
+                layer_sizes = [16, 32, 64, 128],
                 in_channels=3,
                 out_channels=4,
                 dropout_rate=0.1,
-                conv_per_block=1):
+                conv_per_block=1,
+                hidden_activation=torch.nn.SELU(),
+                output_activation=None):
 
         super().__init__() #inherit attrs. from Module
 
-        self.enc_layer_sizes = enc_layer_sizes
-        self.dec_layer_sizes = dec_layer_sizes
-        self.num_enc_layers = len(enc_layer_sizes)
-        self.num_dec_layers = len(dec_layer_sizes)
+        self.enc_layer_sizes = layer_sizes
+        self.dec_layer_sizes = layer_sizes[::-1]
+        self.num_enc_layers = len(layer_sizes)
+        self.num_dec_layers = len(layer_sizes)
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = 3
         self.padding = 1
         self.dropout_rate=dropout_rate
         self.conv_per_block=conv_per_block
+        self.hidden_activation=hidden_activation
 
         # create lists to hold each layer group
         self.enc_layers = torch.nn.ModuleList()
@@ -53,7 +74,10 @@ class UNet(torch.nn.Module):
 
         # add final layer
         self.final_layer = torch.nn.Conv2d(self.dec_layer_sizes[-1], out_channels, kernel_size=1, padding=0)
-        self.final_activation = torch.nn.Softmax(dim=1)
+        if output_activation is not None:
+            self.final_activation = output_activation
+        else:
+            self.final_activation = torch.nn.Identity()
 
 
     def conv_block(self, in_channels, out_channels, kernel_size, padding):
@@ -68,7 +92,7 @@ class UNet(torch.nn.Module):
                     kernel_size=self.kernel_size,
                     padding=self.padding),
                 torch.nn.BatchNorm2d(out_channels),
-                torch.nn.LeakyReLU(),
+                self.hidden_activation,
                 torch.nn.Dropout2d(self.dropout_rate)
                 )
             else:
@@ -80,7 +104,7 @@ class UNet(torch.nn.Module):
                         kernel_size=self.kernel_size,
                         padding=self.padding),
                     torch.nn.BatchNorm2d(out_channels),
-                    torch.nn.LeakyReLU(),
+                    self.hidden_activation,
                     torch.nn.Dropout2d(self.dropout_rate)
                 )
         return conv_block
@@ -128,7 +152,8 @@ class UNet(torch.nn.Module):
         #propagate through encoder layers
         for i, enc_layer in enumerate(self.enc_layers):
             x = enc_layer(x)
-            if (i+1) % 5 == 4: #5 layers per encoder block; on the 4th layer, save output in cache
+
+            if (i+1) % ((self.conv_per_block * 4) + 1) == (self.conv_per_block * 4): #(self.conv_per_block * 4) layers per encoder block; on the penultimate layer, save output in cache
                 cache.append(x) #save layer outputs in cache for skip connections
 
         #propagate through bottleneck layer
@@ -138,8 +163,10 @@ class UNet(torch.nn.Module):
         #propagate through decoder layers
         j = 0 # set index control var for cache
         for i, dec_layer in enumerate(self.dec_layers):
+            
             x = dec_layer(x)
-            if (i+1) % 6 == 2: # 6 layers per decoder block; on the 2nd layer, concatenate with cache
+
+            if (i+1) % ((self.conv_per_block * 4) + 2) == 2: # (self.conv_per_block * 4) + 2 layers per decoder block; on the 2nd layer, concatenate with cache
                 x = torch.cat([x, cache[-(j+1)]], dim=1)
                 j += 1
 
