@@ -75,11 +75,16 @@ def distance_map(image, wc = None, wb = 10, bwidth = 5):
 
     # if weight classes are provided
     if wc:
-        class_weights = np.zeros_like(image)
+        class_weights = np.ones_like(gray)
 
         # loop through weights and add to map
         for k, v in wc.items():
-            class_weights[image == k] = v
-        w = w + class_weights
+            if k == 'wing':
+                class_weights[image[:, :, 0] == 1] = v
+            if k == 'env':
+                class_weights[image[:, :, 1] == 1] = v
+            if k == 'seed':
+                class_weights[image[:, :, 2] == 1] = v
+        w = w * class_weights
     
     return w
