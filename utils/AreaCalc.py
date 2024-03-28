@@ -1,6 +1,6 @@
 import numpy as np
 
-def area_calc(mask, dpi = 600, scale = 'in'):
+def area_calc(mask, dpi = 600, scale = 'cm'):
 
     """
     Converts mask pixel area to in^2
