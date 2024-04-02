@@ -17,14 +17,15 @@ def area_calc(mask, dpi = 600, scale = 'cm'):
     # calculate pixel area
     pixel_area = np.sum(mask == 1)
 
-    # convert pixel area to in
+    # convert pixel area to in^2
+    dpi_2 = dpi ** 2
+    area_in_2 = pixel_area / dpi_2
 
-    if scale == 'in':
-        area = pixel_area / dpi 
-        return area
+    # convert in^2 to cm^2
+    area_cm_2 = area_in_2 * 6.4516
 
-    if scale == 'cm':
-        area = pixel_area / (dpi * 2.54)
-        return area
+    return area_cm_2
+
+
     
     
