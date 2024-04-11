@@ -1,4 +1,4 @@
 
-def train_unet():
+def train_model():
 
     return None

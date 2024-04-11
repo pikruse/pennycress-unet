@@ -23,7 +23,7 @@ def segment_image(model,
                   save_path,
                   image_names,
                   plot = True,
-                  verbose = True,
+                  verbose = 2,
                   device=device):       
     
     """
@@ -35,7 +35,7 @@ def segment_image(model,
         save_path (str): path to save predicted segmentations
         image_names (list): list of image names to process
         plot (bool): whether to plot the images
-        verbose (bool): whether to print IoU scores
+        verbose (0, 1, or 2): whether to print average and IoU scores per image (2), just average IoU scores, or nothing at all
 
     Returns:
         None
@@ -43,6 +43,11 @@ def segment_image(model,
 
     # create list to store predicted segmentations so that we can count seeds later
     pred_images = []
+
+    # create list to store iou scores
+    wing_ious = []
+    env_ious = []
+    seed_ious = []
 
     # loop over images
     for image_name in image_names:
@@ -128,16 +133,20 @@ def segment_image(model,
         wing_gt = mask[:, :, 0] == 1
         wing_pred = pred_image[:, :, 0] == 1
         wing_iou = iou(wing_gt, wing_pred)
+        wing_iou.append(wing_iou)
 
         env_gt = mask[:, :, 1:].sum(-1) == 1 
         env_pred = pred_image[:, :, 1:].sum(-1) == 1  
         env_iou = iou(env_gt, env_pred)
+        env_iou.append(env_iou)
 
         seed_gt = mask[:, :, 2] == 1
         seed_pred = pred_image[:, :, 2] == 1
         seed_iou = iou(seed_gt, seed_pred)
+        seed_iou.append(seed_iou)
 
-        if verbose:
+
+        if verbose == 2:
             print(f"Jaccard Distance (IoU) for wing: {wing_iou}\n")
             print(f"Jaccard Distance (IoU) for envelope: {env_iou}\n")
             print(f"Jaccard Distance (IoU) for seeds: {seed_iou}\n")
@@ -198,5 +207,14 @@ def segment_image(model,
         # save the predicted mask
         pred_image = Image.fromarray((pred_image * 255).astype(np.uint8))
         pred_image.save(save_path + "pred_" + image_name)
+
+    avg_wing = np.mean(wing_ious)
+    avg_env = np.mean(env_ious)
+    avg_seed = np.mean(seed_ious)
+
+    if verbose == 1 or 2:
+        print(f"Average Jaccard Distance (IoU) for wing: {avg_wing}\n")
+        print(f"Average Jaccard Distance (IoU) for envelope: {avg_env}\n")
+        print(f"Average Jaccard Distance (IoU) for seeds: {avg_seed}\n")
     
     return None
