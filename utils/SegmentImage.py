@@ -133,17 +133,17 @@ def segment_image(model,
         wing_gt = mask[:, :, 0] == 1
         wing_pred = pred_image[:, :, 0] == 1
         wing_iou = iou(wing_gt, wing_pred)
-        wing_iou.append(wing_iou)
+        wing_ious.append(wing_iou)
 
         env_gt = mask[:, :, 1:].sum(-1) == 1 
         env_pred = pred_image[:, :, 1:].sum(-1) == 1  
         env_iou = iou(env_gt, env_pred)
-        env_iou.append(env_iou)
+        env_ious.append(env_iou)
 
         seed_gt = mask[:, :, 2] == 1
         seed_pred = pred_image[:, :, 2] == 1
         seed_iou = iou(seed_gt, seed_pred)
-        seed_iou.append(seed_iou)
+        seed_ious.append(seed_iou)
 
 
         if verbose == 2:
