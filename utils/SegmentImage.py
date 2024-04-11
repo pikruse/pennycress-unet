@@ -147,9 +147,9 @@ def segment_image(model,
 
 
         if verbose == 2:
-            print(f"Jaccard Distance (IoU) for wing: {wing_iou}\n")
-            print(f"Jaccard Distance (IoU) for envelope: {env_iou}\n")
-            print(f"Jaccard Distance (IoU) for seeds: {seed_iou}\n")
+            print(f"Jaccard Distance (IoU) for wing: {wing_iou:.4f}\n")
+            print(f"Jaccard Distance (IoU) for envelope: {env_iou:.4f}\n")
+            print(f"Jaccard Distance (IoU) for seeds: {seed_iou:.4f}\n")
 
         # ----------------
         ## ARTFACT REMOVAL
@@ -213,8 +213,8 @@ def segment_image(model,
     avg_seed = np.mean(seed_ious)
 
     if verbose == 1 or 2:
-        print(f"Average Jaccard Distance (IoU) for wing: {avg_wing}\n")
-        print(f"Average Jaccard Distance (IoU) for envelope: {avg_env}\n")
-        print(f"Average Jaccard Distance (IoU) for seeds: {avg_seed}\n")
+        print(f"Average Jaccard Distance (IoU) for wing: {avg_wing:.4f}\n")
+        print(f"Average Jaccard Distance (IoU) for envelope: {avg_env:.4f}\n")
+        print(f"Average Jaccard Distance (IoU) for seeds: {avg_seed:.4f}\n")
     
     return None

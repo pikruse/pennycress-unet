@@ -53,8 +53,8 @@ def plot_loss(log_path,
     
     return None
 
-def plot_val_images(val_loader, model, device, num_plot = 32):
-    # options
+def plot_val_images(val_loader, model, device, num_plot = 4):
+    # options``
     rand_idx = np.random.randint(len(val_loader), size = num_plot)
 
 
