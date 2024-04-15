@@ -11,6 +11,7 @@ from tqdm.auto import tqdm
 from PIL import Image
 from importlib import reload
 from torch.utils.data import DataLoader
+from IPython.display import clear_output
 
 # custom imports
 sys.path.append('../')
@@ -82,7 +83,7 @@ def train_model(model,
     """
 
     # non-customizable options
-    iter_update = 'step {0}: train loss {1:.4e}, val loss {2:.4e}\r'
+    iter_update = 'train loss {1:.4e}, val loss {2:.4e}\r'
     best_val_loss = None # initialize best validation loss
     last_improved = 0 # start early stopping counter
     iter_num = 0 # initialize iteration counter
@@ -95,6 +96,18 @@ def train_model(model,
 
     # keep training until break
     while True:
+
+        # clear print output
+        clear_output(wait=True)
+
+        if best_val_loss is not None:
+            print('---------------------------------------\n',
+                f'Iteration: {iter_num} | Best Loss: {best_val_loss:.4e}\n', 
+                '---------------------------------------', sep = '')
+        else:
+            print('-------------\n',
+                f'Iteration: {iter_num}\n', 
+                '-------------', sep = '')
 
         #
         # checkpoint
@@ -218,5 +231,5 @@ def train_model(model,
         if iter_num > max_iters:
             print(f'maximum iterations reached: {max_iters}')
             break
-
+        
     return None
