@@ -40,18 +40,6 @@ def distance_map(image, wc = None, wb = 10, bwidth = 5):
 
     # get list of label ids
     label_ids = sorted(np.unique(labels))
-
-    # # if no labels, return distance weights of zeros
-    # if len(label_ids) == 1:
-    #     return np.zeros_like(image)
-
-
-    # # filter out wing/pod px
-    # if border_type == 'seed':
-    #     label_ids = label_ids[2:]
-
-    # elif border_type == "pod":
-    #     label_ids = label_ids[1:]
     
     # initialize blank distance matrix
     distances = np.zeros((image.shape[0], image.shape[1], len(label_ids)))
@@ -76,15 +64,14 @@ def distance_map(image, wc = None, wb = 10, bwidth = 5):
     # if weight classes are provided
     if wc:
         class_weights = np.ones_like(gray)
-
         # loop through weights and add to map
         for k, v in wc.items():
             if k == 'wing':
-                class_weights[image[:, :, 0] == 1] = v
-            if k == 'env':
-                class_weights[image[:, :, 1] == 1] = v
-            if k == 'seed':
-                class_weights[image[:, :, 2] == 1] = v
+                class_weights[image[:, :, 0] == 255] = v
+            elif k == 'env':
+                class_weights[image[:, :, 1:].sum(-1) == 255] = v
+            elif k == 'seed':
+                class_weights[image[:, :, 2] == 255] = v
         w = w * class_weights
     
     return w
