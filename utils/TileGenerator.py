@@ -7,7 +7,7 @@ import cv2
 from torch.utils.data import Dataset
 from skimage.io import imshow
 from skimage.measure import label
-from scipy.ndimage import distance_transform_edt
+from scipy.ndimage import distance_transform_edt, binary_dilation
 from PIL import Image
 
 # import custom weight function
@@ -55,7 +55,14 @@ class TileGenerator(Dataset):
         # extract image/row/col indices from mask pixels
         self.indices = [] #list pixel indices we want to extract tiles from
         for i, m in enumerate(masks): #enumerate to get mask index and mask values
-            row_col_ixs = np.argwhere(m[n_pad:-n_pad, n_pad:-n_pad] >= 0) + n_pad #return array containing indices w/ all values inside padding
+            # fix weird mask behavior - all px. values are 0 or 1
+            m[m > 0.5] = 1
+            m[m < 0.5] = 0
+            roi = m[:, :, 1:].sum(-1) > 0
+            roi = binary_dilation(roi, iterations=tile_size//2)
+            roi[:n_pad], roi[-n_pad:] = 0, 0
+            roi[:, :n_pad], roi[:, -n_pad:] = 0, 0
+            row_col_ixs = np.argwhere(roi) #return array containing indices w/ all values inside padding
             img_ixs = i * np.ones(len(row_col_ixs), dtype=np.int32) #return image number repeated for however many indices we found
             self.indices.append(np.concatenate([img_ixs[:, None], row_col_ixs], axis=1)) # create array of image number, row, col indices
         self.indices = np.concatenate(self.indices, axis=0) # concatenate all image index arrays into one
@@ -78,7 +85,7 @@ class TileGenerator(Dataset):
     
     def __getitem__(self, index):
 
-        i, r, c, _ = self.indices[index]
+        i, r, c = self.indices[index]
         w = int((2*self.width**2)**0.5)+1 #use pythagorean theorem to grab a slightly larger tile
         tile = self.images[i][r-w:r+w, c-w:c+w]
         mask = self.masks[i][r-w:r+w, c-w:c+w]
