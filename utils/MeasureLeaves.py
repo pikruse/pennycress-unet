@@ -19,7 +19,7 @@ sys.path.append('../')
 from utils.BuildUNet import UNet
 from utils.GetLowestGPU import GetLowestGPU
 from utils.TileGenerator import TileGenerator
-from codebase.projects.phenotyping.pennycress_segmentation.utils.Metrics import iou
+from utils.Metrics import iou
 from utils.AreaCalc import area_calc
 import utils.SegmentImage as SegmentImage
 

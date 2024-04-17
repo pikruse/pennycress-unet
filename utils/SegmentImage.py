@@ -11,8 +11,10 @@ from ipywidgets import FloatProgress
 from scipy import ndimage
 from PIL import Image
 
+sys.path.append('../')
+
 # custom imports
-from codebase.projects.phenotyping.pennycress_segmentation.utils.Metrics import iou
+from utils.Metrics import iou
 from utils.GetLowestGPU import GetLowestGPU
 
 device = torch.device(GetLowestGPU(verbose=0))
