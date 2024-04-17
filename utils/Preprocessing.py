@@ -64,14 +64,15 @@ def mask_preprocessing(image_path,
 
         # merge
         mask = np.stack([bkgd, wing, env, seed], axis=2).astype(np.uint8) * 255
-        mask = Image.fromarray(mask)
-
-        # save mask
-        mask.save(save_path + image_name)
 
         if verbose:
             print("Shape: ", mask.shape)
             print("Values:", np.unique(mask))
+        
+        mask = Image.fromarray(mask)
+
+        # save mask
+        mask.save(save_path + image_name)
 
         if plot:
             fig, axs = plt.subplots(1, 5, figsize=(20, 5))
