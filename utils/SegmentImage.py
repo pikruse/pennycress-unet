@@ -12,7 +12,7 @@ from scipy import ndimage
 from PIL import Image
 
 # custom imports
-from utils.IOU import iou
+from codebase.projects.phenotyping.pennycress_segmentation.utils.Metrics import iou
 from utils.GetLowestGPU import GetLowestGPU
 
 device = torch.device(GetLowestGPU(verbose=0))
