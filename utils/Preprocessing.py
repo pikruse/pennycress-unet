@@ -34,7 +34,7 @@ def mask_preprocessing(image_path,
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     
-    for image_name in image_names:
+    for image_name in tqdm(image_names):
 
         if verbose:
             print("preprocessing: ", image_name)
@@ -63,7 +63,7 @@ def mask_preprocessing(image_path,
         bkgd[seed] = 0
 
         # merge
-        mask = np.stack([bkgd, wing, env, seed], axis=2).astype(np.uint8) * 255
+        mask = (np.stack([bkgd, wing, env, seed], axis=2).astype(np.uint8) * 255)[:, :, 1:]
 
         if verbose:
             print("Shape: ", mask.shape)

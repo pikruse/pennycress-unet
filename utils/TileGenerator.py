@@ -106,7 +106,7 @@ class TileGenerator(Dataset):
         # distance weighting 
         if self.distance_weights:
             weights_input = mask.astype(np.uint8)[:, :, 1:] * 255
-            weights = DistanceMap.distance_map(weights_input, wc = {'wing': 1, 'env': 1, 'seed': 2}, wb = 10, bwidth = 5)
+            weights = DistanceMap.distance_map(weights_input, wc = {'wing': 1, 'env': 1, 'seed': 1.2}, wb = 10, bwidth = 5)
         
         #convert to torch tensor
         tile = torch.from_numpy(tile.transpose(2, 0, 1)) #convert to torch tensor and transpose to channels first
