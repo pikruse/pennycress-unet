@@ -60,6 +60,7 @@ def distance_map(image, wc = None, wb = 10, bwidth = 5):
     # calculate weights (border param. * exp(-1/2 * (d1 + d2) / sigma) * no_labels
     w = wb * np.exp(-1/2*((d1 + d2) / bwidth)**2)
     w += 1
+    
 
     # if weight classes are provided
     if wc:
