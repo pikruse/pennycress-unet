@@ -19,7 +19,7 @@ def distance_map(image, wc = None, wb = 10, bwidth = 5):
     Function to create distance map from grayscale image
 
     Parameters:
-        image (numpy array): input 3-channel RGB image
+        image (numpy array): input 3-channel RGB image (MUST BE 0-255!!!!)
         wc (dictionary): dictionary containing class weights
         wb (int): weight for border pixels
         bwidth (int): border width parameter
@@ -29,11 +29,7 @@ def distance_map(image, wc = None, wb = 10, bwidth = 5):
     """
 
     # convert image to PIL and grayscale
-    image = Image.fromarray(image)
-    gray = np.array(image.convert('L'))
-
-    # convert back to array
-    image = np.array(image)
+    gray = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2GRAY)
 
     # label objects in grayscale image
     labels = label(gray)
