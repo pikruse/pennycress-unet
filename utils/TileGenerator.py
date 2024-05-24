@@ -3,6 +3,7 @@ import albumentations as A
 import torch
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
 
 from torch.utils.data import Dataset
 from skimage.io import imshow
@@ -11,7 +12,7 @@ from scipy.ndimage import distance_transform_edt, binary_dilation
 from PIL import Image
 
 # import custom weight function
-import utils.DistanceMapRGB as DistanceMapRGB
+import utils.DistanceMap as DistanceMap
 
 
 
@@ -56,8 +57,8 @@ class TileGenerator(Dataset):
         self.indices = [] #list pixel indices we want to extract tiles from
         for i, m in enumerate(masks): #enumerate to get mask index and mask values
             # fix weird mask behavior - all px. values are 0 or 1
-            m[m > 0.5] = 1
-            m[m < 0.5] = 0
+            # m[m > 0.5] = 1
+            # m[m < 0.5] = 0
             roi = m[:, :, 1:].sum(-1) > 0
             roi = binary_dilation(roi, iterations=tile_size//2)
             roi[:n_pad], roi[-n_pad:] = 0, 0
@@ -67,7 +68,7 @@ class TileGenerator(Dataset):
             self.indices.append(np.concatenate([img_ixs[:, None], row_col_ixs], axis=1)) # create array of image number, row, col indices
         self.indices = np.concatenate(self.indices, axis=0) # concatenate all image index arrays into one
 
-        # make an augmenataion pipeline
+        # make an augmentation pipeline
         self.augment = A.Compose([
             A.Affine(rotate=[-180, 180],
                      mode=0,
@@ -93,7 +94,6 @@ class TileGenerator(Dataset):
         # augment image and mask
         if self.split == 'train':
             tile = (255*tile).astype(np.uint8)
-            mask = mask.astype(np.uint8)
             augmented = self.augment(image=tile, mask=mask)
             tile = (augmented['image'] / 255.0).astype(np.float32)
             mask = augmented['mask'].astype(np.float32)
@@ -103,10 +103,10 @@ class TileGenerator(Dataset):
         tile = tile[cent-self.width:cent+self.width, cent-self.width:cent+self.width]
         mask = mask[cent-self.width:cent+self.width, cent-self.width:cent+self.width]
 
-        # distance weighting 
+        # create distance weights
         if self.distance_weights:
-            weights_input = mask.astype(np.uint8)[:, :, 1:] * 255
-            weights = DistanceMapRGB.distance_map(weights_input, wc = {'wing': 1, 'env': 1, 'seed': 1.2}, wb = .5, bwidth = 5)
+            seed = mask[:, :, 3] > 0.5
+            weights = DistanceMap.distance_map_bw(seed, wb = .5, bwidth = 5)
         
         #convert to torch tensor
         tile = torch.from_numpy(tile.transpose(2, 0, 1)) #convert to torch tensor and transpose to channels first

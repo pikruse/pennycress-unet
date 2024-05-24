@@ -22,7 +22,7 @@ import utils.Plot as Plot
 import utils.WeightedCrossEntropy as WeightedCrossEntropy
 import utils.BuildUNet as BuildUNet
 import utils.TileGenerator as TG
-import codebase.projects.phenotyping.PennycressUNet.utils.DistanceMapRGB as DistanceMapRGB
+import utils.DistanceMap as DistanceMap
 
 def train_model(model,
                 loss_function,
