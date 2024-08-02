@@ -54,7 +54,7 @@ def plot_loss(log_path,
     return None
 
 def plot_val_images(val_loader, model, device, num_plot = 4):
-    # options``
+    # options
     rand_idx = np.random.randint(len(val_loader), size = num_plot)
 
 
@@ -90,3 +90,29 @@ def plot_val_images(val_loader, model, device, num_plot = 4):
         plt.show()
 
     return None
+
+def mask_viz(image, mask, mask_alpha = 0.5):
+  
+    """
+    Function to overlay mask on image
+
+    Parameters:
+    image (np.array): image to overlay mask on
+    mask (np.array): mask to overlay on image
+    mask_alpha (float): alpha value for mask overlay
+  
+    Returns:
+    masked_image (np.array): image with mask overlay
+    """
+    image = image.astype(np.float64)
+    mask = mask.astype(np.float64)
+  
+    # loop through mask channels
+    masked_image = np.where(mask > 0,
+                            mask,
+                            image)
+  
+    # convert to float
+    masked_image = masked_image.astype(np.float64)
+  
+    return cv2.addWeighted(image, (1 - mask_alpha), masked_image, mask_alpha, 0)
