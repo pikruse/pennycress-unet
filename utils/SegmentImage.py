@@ -7,6 +7,7 @@ import torch
 import cv2
 
 from tqdm.auto import tqdm
+from IPython.display import clear_output
 from ipywidgets import FloatProgress
 from scipy import ndimage
 from PIL import Image
@@ -53,7 +54,9 @@ def segment_image(model,
 
     # loop over images
     for image_name in image_names:
-        print(f"Processing {image_name}")
+
+        clear_output(wait=True)
+        print(f"Processing {image_name} | Image {image_names.index(image_name)+1} of {len(image_names)}")
 
         # ----------------
         ## PREPROCESSING
