@@ -203,8 +203,8 @@ def segment_image(model,
                 ax[0].imshow(image)
                 ax[0].set_title("Original Image")
 
-                ax[2].imshow(pred_image)
-                ax[2].set_title("Predicted Mask")
+                ax[1].imshow(pred_image)
+                ax[1].set_title("Predicted Mask")
 
         # append to pred images list for counting
         pred_images.append(pred_image)
