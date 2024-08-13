@@ -63,10 +63,11 @@ def segment_image(model,
         image = Image.open(image_path + image_name)
         image = np.array(image) / 255.0
 
-        mask = np.array(Image.open(mask_path + image_name))[:,:,:3] / 255.0
+        if mask_path is not None:
+            mask = np.array(Image.open(mask_path + image_name))[:,:,:3] / 255.0
 
-        # fix weird mask behavior - all px. values are 0 or 1
-        mask[mask > 0] = 1
+            # fix weird mask behavior - all px. values are 0 or 1
+            mask[mask > 0] = 1
 
         # pad first 2 dimensions, (H, W) by 32 px
         image = np.pad(image,
@@ -132,26 +133,27 @@ def segment_image(model,
         # IOU
         # ---------------
 
-        wing_gt = mask[:, :, 0] == 1
-        wing_pred = pred_image[:, :, 0] == 1
-        wing_iou = iou(wing_gt, wing_pred)
-        wing_ious.append(wing_iou)
+        if mask_path is not None:
+            wing_gt = mask[:, :, 0] == 1
+            wing_pred = pred_image[:, :, 0] == 1
+            wing_iou = iou(wing_gt, wing_pred)
+            wing_ious.append(wing_iou)
 
-        env_gt = mask[:, :, 1:].sum(-1) == 1 
-        env_pred = pred_image[:, :, 1:].sum(-1) == 1  
-        env_iou = iou(env_gt, env_pred)
-        env_ious.append(env_iou)
+            env_gt = mask[:, :, 1:].sum(-1) == 1 
+            env_pred = pred_image[:, :, 1:].sum(-1) == 1  
+            env_iou = iou(env_gt, env_pred)
+            env_ious.append(env_iou)
 
-        seed_gt = mask[:, :, 2] == 1
-        seed_pred = pred_image[:, :, 2] == 1
-        seed_iou = iou(seed_gt, seed_pred)
-        seed_ious.append(seed_iou)
+            seed_gt = mask[:, :, 2] == 1
+            seed_pred = pred_image[:, :, 2] == 1
+            seed_iou = iou(seed_gt, seed_pred)
+            seed_ious.append(seed_iou)
 
 
-        if verbose == 2:
-            print(f"Jaccard Distance (IoU) for wing: {wing_iou:.4f}\n")
-            print(f"Jaccard Distance (IoU) for envelope: {env_iou:.4f}\n")
-            print(f"Jaccard Distance (IoU) for seeds: {seed_iou:.4f}\n")
+            if verbose == 2:
+                print(f"Jaccard Distance (IoU) for wing: {wing_iou:.4f}\n")
+                print(f"Jaccard Distance (IoU) for envelope: {env_iou:.4f}\n")
+                print(f"Jaccard Distance (IoU) for seeds: {seed_iou:.4f}\n")
 
         # ----------------
         ## ARTFACT REMOVAL
@@ -159,7 +161,9 @@ def segment_image(model,
 
         # set bg to white
         pred_image[pred_image.sum(axis=2) == 0] = 1
-        mask[mask.sum(axis=2) == 0] = 1
+
+        if mask_path is not None:
+            mask[mask.sum(axis=2) == 0] = 1
 
         # create binary mask
         pred_mask = pred_image.sum(axis=2) != 3
@@ -181,27 +185,26 @@ def segment_image(model,
         # ----------------
         
         if plot:
-            # plot the image and prediction together
-            fig, ax = plt.subplots(1, 6, figsize=(40, 20))
-            ax[0].imshow(image)
-            ax[0].set_title("Original Image")
+            if mask_path is not None:
+                # plot the image and prediction together
+                fig, ax = plt.subplots(1, 3, figsize=(40, 20))
+                ax[0].imshow(image)
+                ax[0].set_title("Original Image")
 
-            # set mask bg to white and overlay on image
-            ax[1].imshow(mask)
-            ax[1].set_title("Ground Truth Mask")
+                # set mask bg to white and overlay on image
+                ax[1].imshow(mask)
+                ax[1].set_title("Ground Truth Mask")
 
-            ax[2].imshow(pred_image)
-            ax[2].set_title("Predicted Mask")
+                ax[2].imshow(pred_image)
+                ax[2].set_title("Predicted Mask")
+            else:
+                # plot the image and prediction together
+                fig, ax = plt.subplots(1, 2, figsize=(40, 20))
+                ax[0].imshow(image)
+                ax[0].set_title("Original Image")
 
-            ax[3].imshow(wing_pred, cmap='gray')
-            ax[3].set_title("Wing Prediction")
-
-            ax[4].imshow(env_pred, cmap='gray')
-            ax[4].set_title("Envelope Prediction")
-
-            ax[5].imshow(seed_pred, cmap='gray')
-            ax[5].set_title("Seed Prediction")
-            plt.show
+                ax[2].imshow(pred_image)
+                ax[2].set_title("Predicted Mask")
 
         # append to pred images list for counting
         pred_images.append(pred_image)
@@ -210,13 +213,14 @@ def segment_image(model,
         pred_image = Image.fromarray((pred_image * 255).astype(np.uint8))
         pred_image.save(save_path + "pred_" + image_name)
 
-    avg_wing = np.mean(wing_ious)
-    avg_env = np.mean(env_ious)
-    avg_seed = np.mean(seed_ious)
+    if mask_path is not None:
+        avg_wing = np.mean(wing_ious)
+        avg_env = np.mean(env_ious)
+        avg_seed = np.mean(seed_ious)
 
-    if verbose == 1 or 2:
-        print(f"Average Jaccard Distance (IoU) for wing: {avg_wing:.4f}\n")
-        print(f"Average Jaccard Distance (IoU) for envelope: {avg_env:.4f}\n")
-        print(f"Average Jaccard Distance (IoU) for seeds: {avg_seed:.4f}\n")
+        if verbose == 1 or 2:
+            print(f"Average Jaccard Distance (IoU) for wing: {avg_wing:.4f}\n")
+            print(f"Average Jaccard Distance (IoU) for envelope: {avg_env:.4f}\n")
+            print(f"Average Jaccard Distance (IoU) for seeds: {avg_seed:.4f}\n")
     
     return None
