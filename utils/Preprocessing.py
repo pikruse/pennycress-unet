@@ -188,3 +188,28 @@ def split_image(image_names,
     print("Image Splitting Complete!")
 
     return 
+
+def remove_artifacts(img):
+    """
+    Function to remove small artifacts from segmentations
+
+    Parameters:
+        img (np.array): input image with artifacts, range [0,1]
+    Returns:
+        img (np.array): image with artifacts removed, range [0,1]
+    """
+
+    # create binary mask
+    mask = img.sum(axis=2) != 3
+
+    # remove small artifacts
+    size = 5000
+    labels = ndimage.label(mask)[0]
+    sizes = np.bincount(labels.reshape(-1))
+    for j in range(1, len(sizes)):
+        if sizes[j] < size:
+            mask[labels == j] = False
+
+    img[mask == 0 ] = 1
+
+    return img
