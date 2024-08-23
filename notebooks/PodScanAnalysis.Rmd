@@ -4,6 +4,8 @@ output: pdf_document
 date: "2024-08-23"
 ---
 
+# Load Packages, Data, and Set Working Directory
+
 ```{r}
 # Load packages, set wd
 rm(list=ls())
@@ -27,6 +29,8 @@ dim(pod_scans)
 head(pod_scans)
 colnames(pod_scans)
 ```
+# Preprocessing
+
 ```{r}
 # Obtain genotype names from the image names
 tmp <- sapply(pod_scans$image_name, function(x){
@@ -116,13 +120,6 @@ panel.smooth.lm <- function(x, y) {
   abline(lm(y ~ x), col = "red", lwd = 2)  
 }
 
-# create plots
-panel.smooth.lm <- function(x, y) {
-  points(x, y, pch = 19, col = "blue")  
-  abline(lm(y ~ poly(x, degree=2, raw=TRUE)), col = "red", lwd = 2)  
-}
-
-
 panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor = 1.5) {
   usr <- par("usr")
   on.exit(par(usr = usr))
@@ -134,16 +131,7 @@ panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor = 1.5) {
 }
 ```
 
-```{r}
-options(repr.plot.width=40, repr.plot.height=40)
-pairs(pods_pheno_avg[,-1],
-      lower.panel = function(x, y) panel.smooth.poly(x, y),  
-      upper.panel = function(x, y) panel.cor(x, y, cex.cor = 2),  
-      labels = colnames(pods_pheno_avg)[-1], 
-      cex.labels = 1.5,  
-      gap = 0.5)  
-```
-
+# Plot Average Phenotype Measurement Correlation
 
 ```{r}
 options(repr.plot.width=40, repr.plot.height=40)
@@ -154,6 +142,8 @@ pairs(pods_pheno_avg[,-1],
       cex.labels = 1.5,  
       gap = 0.5)  
 ```
+# Plot Minimum Phenotype Measurement Correlation
+
 ```{r}
 options(repr.plot.width=40, repr.plot.height=40)
 pairs(pods_pheno_min[,-1],
@@ -163,6 +153,8 @@ pairs(pods_pheno_min[,-1],
       cex.labels = 1.5,  
       gap = 0.5)  
 ```
+# Plot Maximum Phenotype Measurement Correlation
+
 ```{r}
 options(repr.plot.width=40, repr.plot.height=40)
 pairs(pods_pheno_max[,-1],
@@ -172,4 +164,38 @@ pairs(pods_pheno_max[,-1],
       cex.labels = 1.5,  
       gap = 0.5)  
 ```
+# Plot Polynomial Plots
+
+```{r}
+# polynomial modeling
+pods_pheno_avg_sub <- pods_pheno_avg %>% 
+  select(yield_kg) %>% 
+  filter(!is.na(yield_kg))
+
+x <- pods_pheno_avg_sub$seed.area
+y <- pods_pheno_avg_sub$yield_kg
+
+fit <- lm(y ~ x + I(x^2))
+
+plot(x,y)
+lines(sort(x), fitted(fit)[order(x)], col='red', type='b')
+```
+# Plot Yield Against Derived Phenotypes 
+
+```{r}
+# explore seed to other mass ratio
+pods_pheno_avg <- pods_pheno_max %>% 
+  filter(!is.na(yield_kg)) %>% 
+  mutate(seed_to_other = seed.area / (env.area + wing.area))
+
+x <- pods_pheno_avg$seed_to_other
+y <- pods_pheno_avg$yield_kg
+
+fit <- lm(y ~ x)
+
+plot(x,y)
+lines(sort(x), fitted(fit)[order(x)], col='red', type='b')
+  
+```
+
 
