@@ -1,0 +1,175 @@
+---
+title: "Pod Scan Analysis"
+output: pdf_document
+date: "2024-08-23"
+---
+
+```{r}
+# Load packages, set wd
+rm(list=ls())
+setwd(r"{/Users/pkr/Desktop/proj/research/phenotyping/pennycress analysis}")
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+```
+
+```{r}
+# Get external phenotype data, curated by Roshan / Mirko
+merged_pheno <- read.csv(r'{/Users/pkr/Desktop/proj/research/phenotyping/pennycress analysis/data/pennycress_agro_phenotypes_master_table_w_genotypes_no_outliers_tps_adj_curated_CRA.csv}', header=T)
+dim(merged_pheno)
+head(merged_pheno)
+colnames(merged_pheno)
+```
+```{r}
+# Pod scan data from U-Net
+pod_scans <- read.csv(r'{/Users/pkr/Desktop/proj/research/phenotyping/pennycress analysis/data/measurements.csv}', header=T)
+dim(pod_scans)
+head(pod_scans)
+colnames(pod_scans)
+```
+```{r}
+# Obtain genotype names from the image names
+tmp <- sapply(pod_scans$image_name, function(x){
+    y <- unlist(str_split(x, '-'))[3]
+    return(y)
+})
+names <- tmp %>% as.data.frame() 
+nrow(names)
+pod_scans$genotype <- names[,1]
+head(pod_scans)
+
+# There are many names with NA values. These are from other experiments (transgenic) in the same field as per Bill and Win
+```
+```{r}
+# remove 0 values
+pod_scans <- pod_scans %>% 
+  filter(seed_count != 0 & wing.area != 0 & env.area != 0 & seed.area != 0)
+head(pod_scans)
+```
+
+
+```{r}
+# Checking the variance within and across genotypes
+pod_scans_avg <- pod_scans %>% 
+filter(!is.na(genotype)) %>% 
+filter(genotype %in% merged_pheno$genotype) %>% 
+group_by(genotype) %>% 
+summarise(across(all_of(colnames(pod_scans)[2:5]), median))
+dim(pod_scans_avg)
+head(pod_scans_avg)
+
+# get max and min too
+pod_scans_min <- pod_scans %>% 
+filter(!is.na(genotype)) %>% 
+filter(genotype %in% merged_pheno$genotype) %>% 
+group_by(genotype) %>% 
+summarise(across(all_of(colnames(pod_scans)[2:5]), min))
+dim(pod_scans_min)
+head(pod_scans_min)
+
+# get max and min too
+pod_scans_max <- pod_scans %>% 
+filter(!is.na(genotype)) %>% 
+filter(genotype %in% merged_pheno$genotype) %>% 
+group_by(genotype) %>% 
+summarise(across(all_of(colnames(pod_scans)[2:5]), max))
+dim(pod_scans_max)
+head(pod_scans_max)
+```
+```{r}
+# merge tables
+#avg
+merged_pheno_avg <- merged_pheno %>% filter(!is.na(genotype)) %>% 
+dplyr::select(genotype, tgw, yield_kg, oil_percent_dwb) %>% 
+filter(genotype %in% pod_scans_avg$genotype) %>% 
+group_by(genotype) %>% 
+summarise(across(all_of(c('tgw', 'yield_kg', 'oil_percent_dwb')), mean))
+# summarise(across(all_of(c('tgw', 'yield_kg', 'oil_percent_dwb')), median))
+dim(merged_pheno_avg)
+head(merged_pheno_avg)
+```
+
+```{r}
+# mean
+stopifnot(all(pod_scans_avg$genotype == merged_pheno_avg$genotype))
+pods_pheno_avg <- merge(merged_pheno_avg, pod_scans_avg, by='genotype')
+dim(pods_pheno_avg)
+head(pods_pheno_avg)
+
+# min
+stopifnot(all(pod_scans_min$genotype == merged_pheno_avg$genotype))
+pods_pheno_min <- merge(merged_pheno_avg, pod_scans_min, by='genotype')
+dim(pods_pheno_min)
+head(pods_pheno_min)
+
+# max
+stopifnot(all(pod_scans_max$genotype == merged_pheno_avg$genotype))
+pods_pheno_max <- merge(merged_pheno_avg, pod_scans_max, by='genotype')
+dim(pods_pheno_max)
+head(pods_pheno_max)
+```
+
+```{r}
+# create plots
+panel.smooth.lm <- function(x, y) {
+  points(x, y, pch = 19, col = "blue")  
+  abline(lm(y ~ x), col = "red", lwd = 2)  
+}
+
+# create plots
+panel.smooth.lm <- function(x, y) {
+  points(x, y, pch = 19, col = "blue")  
+  abline(lm(y ~ poly(x, degree=2, raw=TRUE)), col = "red", lwd = 2)  
+}
+
+
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor = 1.5) {
+  usr <- par("usr")
+  on.exit(par(usr = usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- cor(x, y, use = "complete.obs")  
+  txt <- format(c(r, 0.123456789), digits = digits)[1]
+  txt <- paste0(prefix, txt, cex=10)
+  text(0.5, 0.5, txt)  
+}
+```
+
+```{r}
+options(repr.plot.width=40, repr.plot.height=40)
+pairs(pods_pheno_avg[,-1],
+      lower.panel = function(x, y) panel.smooth.poly(x, y),  
+      upper.panel = function(x, y) panel.cor(x, y, cex.cor = 2),  
+      labels = colnames(pods_pheno_avg)[-1], 
+      cex.labels = 1.5,  
+      gap = 0.5)  
+```
+
+
+```{r}
+options(repr.plot.width=40, repr.plot.height=40)
+pairs(pods_pheno_avg[,-1],
+      lower.panel = function(x, y) panel.smooth.lm(x, y),  
+      upper.panel = function(x, y) panel.cor(x, y, cex.cor = 2),  
+      labels = colnames(pods_pheno_avg)[-1], 
+      cex.labels = 1.5,  
+      gap = 0.5)  
+```
+```{r}
+options(repr.plot.width=40, repr.plot.height=40)
+pairs(pods_pheno_min[,-1],
+      lower.panel = function(x, y) panel.smooth.lm(x, y),  
+      upper.panel = function(x, y) panel.cor(x, y, cex.cor = 2),  
+      labels = colnames(pods_pheno_min)[-1], 
+      cex.labels = 1.5,  
+      gap = 0.5)  
+```
+```{r}
+options(repr.plot.width=40, repr.plot.height=40)
+pairs(pods_pheno_max[,-1],
+      lower.panel = function(x, y) panel.smooth.lm(x, y),  
+      upper.panel = function(x, y) panel.cor(x, y, cex.cor = 2),  
+      labels = colnames(pods_pheno_max)[-1], 
+      cex.labels = 1.5,  
+      gap = 0.5)  
+```
+
