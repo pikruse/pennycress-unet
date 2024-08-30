@@ -11,7 +11,7 @@ def area_calc(mask, dpi = 600, scale = 'cm'):
         scale (str): scale of image (in or cm)
     
     Returns:
-        area (float): area of mask in in/cm
+        area (float): area of mask in in/cm_2
     """
 
     # calculate pixel area
