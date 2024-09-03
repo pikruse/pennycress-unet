@@ -17,4 +17,4 @@ def get_file_names(path, extension):
 
     file_names = [os.path.basename(f) for f in os.listdir(path) if f.endswith(extension)]
 
-    return file_names
+    return sorted(file_names)
