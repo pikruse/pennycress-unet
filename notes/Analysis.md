@@ -12,12 +12,12 @@
         * env perimeter (`env+seed` first)
         * seed perimeter
     2. Relative
-        * wing-to-(wing+env+seed) (Area)
+        * wing-to-(wing+env+seed) (Area) 
         * env-to-... (Area)
         * seed-to-... (Area)
         * env-to-wing (Perimeter)
         * seed-to-wing (Perimeter)
-2. color-based traits
+2. color-based traits **Done**
     * wing_rgb_r, wing_rgb_g, ... , wing_lab_B
     * env...
     * seed...
