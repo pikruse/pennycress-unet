@@ -21,6 +21,7 @@ def get_color_features(img, mask):
     Returns:
         Features (tuple): A 3-object tuple, each containing a 9-dim feature vector with each object representing a color trait.
     """
+
     # get rgb, hsv, and lab color spaces
     rgb = img
     hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
@@ -34,9 +35,9 @@ def get_color_features(img, mask):
     features = np.stack([r, g, b, h, s, v, l, a, B], axis=-1)
 
     # separate out the classes
-    wing = test_mask[:,:,0] > 128
-    env = test_mask[:,:,1] > 128
-    seed = test_mask[:,:,2] > 128 
+    wing = mask[:,:,0] > 128
+    env = mask[:,:,1] > 128
+    seed = mask[:,:,2] > 128 
 
     # get features by class
     wing_features = features[wing] # output is (n_pixels, n_features)
@@ -127,3 +128,55 @@ def to_total_ratio(mask, feature: str, type: str = "area"):
         elif feature == "seed":
             return seed_perimeter / total_perimeter
 
+# write a function to calculate ratio features between two classes
+def between_ratio(mask, feature1: str, feature2: str, type: str = "area"):
+
+    """
+    Calculates the ratio of a feature between two classes.
+
+    Parameters:
+        mask (np.array): A 3-channel mask with range 0-255.
+        feature1 (str): The first feature to calculate the ratio between.
+        feature2 (str): The second feature to calculate the ratio between.
+        type (str): The type of feature to calculate the ratio of. Must be one of 'area' or 'perimeter.'
+    
+    Returns:
+        Ratio (float): The ratio of the feature between the two classes. Calculated as feature1 / feature2.
+    """
+
+    # make sure the strings passed are valid
+    assert feature1 and feature2 in ["wing", "env", "seed"], "Features must be one of 'wing', 'env', or 'seed'."
+    assert type in ["area", "perimeter"], "Type must be one of 'area' or 'perimeter'."
+    
+    
+
+    if type == "area":
+
+        # separate out the classes
+        wing = mask[:,:,0] > 128
+        env = mask[:,:,1] > 128
+        seed = mask[:,:,2] > 128
+
+        # get areas by class
+        wing_area, env_area, seed_area = wing.sum(), env.sum(), seed.sum()
+
+        # make dict to map strings to indices
+        feature_map = {"wing": wing_area, 
+                       "env": env_area, 
+                       "seed": seed_area}
+
+        # get ratio of feature between two classes
+        return feature_map[feature1] / feature_map[feature2]
+
+    elif type == "perimeter":
+        
+        # get perimeters by class
+        wing_perimeter, env_perimeter, seed_perimeter = perimeter(mask)
+
+        # make dict to map strings to indices
+        feature_map = {"wing": wing_perimeter, 
+                       "env": env_perimeter, 
+                       "seed": seed_perimeter,}
+
+        # get ratio of feature between two classes
+        return feature_map[feature1] / feature_map[feature2]

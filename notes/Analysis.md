@@ -4,14 +4,14 @@
 
 # Features to Add
 1. Morphometrics:
-    1. Absolute
+    1. Absolute **Done**
         * wing area
         * env area
         * seed area
         * wing perimeter (`wing+env+seed` first)
         * env perimeter (`env+seed` first)
         * seed perimeter
-    2. Relative
+    2. Relative **Done**
         * wing-to-(wing+env+seed) (Area) 
         * env-to-... (Area)
         * seed-to-... (Area)
