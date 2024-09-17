@@ -26,7 +26,7 @@ from utils.BuildUNet import UNet
 from utils.GetLowestGPU import GetLowestGPU
 from utils.TileGenerator import TileGenerator
 from utils.Metrics import iou
-from utils.AreaCalc import area_calc
+from utils.Traits import area_calc
 import utils.SegmentImage as SegmentImage
 
 device = torch.device(GetLowestGPU(verbose=0))
@@ -97,6 +97,9 @@ def measure_pods(pred_path,
                 wing_area = area_calc(split_image[:, :, 0])
                 env_area = area_calc(split_image[:, :, 1:2])
                 seed_area = area_calc(split_image[:, :, 2])
+
+                # calculate other features
+
 
                 if verbose:
                         print(f"wing area: {wing_area:.2f} cm", "|", f"env area: {env_area:.2f} cm", "|", f"seed area: {seed_area:.2f} cm")
@@ -202,7 +205,18 @@ def measure_pods(pred_path,
            
     # save seed counts to csv
     print(len(measurements))
-    measurements = pd.DataFrame(measurements, columns=["image_name", "seed_count", "wing area", "env area", "seed area"])
+    measurements = pd.DataFrame(measurements, columns=["image_name", 
+                                                       "seed_count", 
+                                                       "wing area", 
+                                                       "env area", 
+                                                       "seed area",])
+    
+    # remove outliers 
+    # seed count < 1 (outliers)
+    measurements = measurements[measurements["seed_count"] >= 1]
+
+    # wing area < .2 (outliers)
+    measurements = measurements[measurements["wing area"] > .2]     
 
 
     if verbose:

@@ -169,9 +169,7 @@ def between_ratio(mask, feature1: str, feature2: str, type: str = "area"):
 
     # make sure the strings passed are valid
     assert feature1 and feature2 in ["wing", "env", "seed"], "Features must be one of 'wing', 'env', or 'seed'."
-    assert type in ["area", "perimeter"], "Type must be one of 'area' or 'perimeter'."
-    
-    
+    assert type in ["area", "perimeter"], "Type must be one of 'area' or 'perimeter'."    
 
     if type == "area":
 
