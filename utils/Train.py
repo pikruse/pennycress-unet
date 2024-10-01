@@ -120,6 +120,7 @@ def train_model(model,
             shuffle=True,
             num_workers=n_workers,
             pin_memory=True)
+        
         val_loader = DataLoader(
             val_generator, 
             batch_size=batch_size, 

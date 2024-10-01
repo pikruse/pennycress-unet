@@ -97,9 +97,9 @@ def mask_preprocessing(image_path,
 
 def split_image(image_names,
                 image_path,
-                mask_path,
                 image_save_path,
-                mask_save_path,
+                mask_path=None,
+                mask_save_path=None,
                 plot = False):
     
     """
@@ -128,19 +128,23 @@ def split_image(image_names,
 
         # load image and mask
         image = Image.open(image_path + image_name).convert('RGB')
-        mask = Image.open(mask_path + image_name).convert('RGB')
 
-        
+        if mask_path is not None:
+            mask = Image.open(mask_path + image_name).convert('RGB')
 
         # convert to numpy array and normalize
         image = np.array(image) / 255.0
-        mask_rgb = np.array(mask) / 255.0 #normalized rgb mask for saving
-        mask = np.array(mask).sum(axis=2) > 128 # convert to boolean mask
+
+        if mask_path is not None:
+            mask_rgb = np.array(mask) / 255.0 #normalized rgb mask for saving
+            mask = np.array(mask).sum(axis=2) > 128 # convert to boolean mask
 
         # pad image and and mask
         image = np.pad(image, ((100, 100), (100, 100), (0, 0)), mode='edge')
-        mask = np.pad(mask, ((100, 100), (100, 100)), mode='constant')
-        mask_rgb = np.pad(mask_rgb, ((100, 100), (100, 100), (0, 0)), mode='constant')
+
+        if mask_path is not None:
+            mask = np.pad(mask, ((100, 100), (100, 100)), mode='constant')
+            mask_rgb = np.pad(mask_rgb, ((100, 100), (100, 100), (0, 0)), mode='constant')
 
         if plot:
             # plot image and mask for sanity
@@ -160,30 +164,43 @@ def split_image(image_names,
             bboxes[i] = slice(x.start-x_pad, x.stop+x_pad), slice(y.start-y_pad, y.stop+y_pad)
 
         if plot:
+            if mask_path is not None:
             # plot image and mask with bounding boxes
-            fig, axs = plt.subplots(1, 2, figsize=(10, 5))
-            axs[0].imshow(image)
-            axs[1].imshow(mask)
-            for bbox in bboxes:
-                y, x = bbox
-                axs[0].plot([x.start, x.start, x.stop, x.stop, x.start], [y.start, y.stop, y.stop, y.start, y.start], '--', color='r')
-                axs[1].plot([x.start, x.start, x.stop, x.stop, x.start], [y.start, y.stop, y.stop, y.start, y.start], '--', color='r')
-            plt.tight_layout()
-            plt.show()
+                fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+                axs[0].imshow(image)
+                axs[1].imshow(mask)
+                for bbox in bboxes:
+                    y, x = bbox
+                    axs[0].plot([x.start, x.start, x.stop, x.stop, x.start], [y.start, y.stop, y.stop, y.start, y.start], '--', color='r')
+                    axs[1].plot([x.start, x.start, x.stop, x.stop, x.start], [y.start, y.stop, y.stop, y.start, y.start], '--', color='r')
+                plt.tight_layout()
+                plt.show()
+            else:
+                fig = plt.figure(figsize=(5, 5))
+                fig.imshow(image)
+                for bbox in bboxes:
+                    y, x = bbox
+                    fig.plot([x.start, x.start, x.stop, x.stop, x.start], [y.start, y.stop, y.stop, y.start, y.start], '--', color='r')
+                plt.tight_layout()
+                plt.show()
+                
 
         # save split images
         for i, bbox in enumerate(tqdm(bboxes)):
             y, x = bbox
             split_image = image[y, x, :]
-            split_mask = mask_rgb[y, x, :]
+            if mask_path is not None:
+                split_mask = mask_rgb[y, x, :]
 
             # convert to PIL image
             split_image = Image.fromarray((split_image * 255).astype(np.uint8))
-            split_mask = Image.fromarray((split_mask * 255).astype(np.uint8))
+            if mask_path is not None:
+                split_mask = Image.fromarray((split_mask * 255).astype(np.uint8))
 
             # save img, msk
             split_image.save(image_save_path + image_name[:-4] + "_" + str(i) + ".png")
-            split_mask.save(mask_save_path + image_name[:-4] + "_" + str(i) + ".png")
+            if mask_path is not None:
+                split_mask.save(mask_save_path + image_name[:-4] + "_" + str(i) + ".png")
 
     print("Image Splitting Complete!")
 
