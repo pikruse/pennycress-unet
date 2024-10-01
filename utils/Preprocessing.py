@@ -123,6 +123,10 @@ def split_image(image_names,
 
     # loop through each image
     for image_name in image_names:
+        
+        if os.path.exists(image_save_path + image_name):
+            print("Image already split: ", image_name)
+            continue
 
         print("Processing image: ", image_name)
 
@@ -134,6 +138,8 @@ def split_image(image_names,
 
         # convert to numpy array and normalize
         image = np.array(image) / 255.0
+        bw = image.sum(axis=2) < 1.25
+        bw = ndimage.binary_fill_holes(bw)
 
         if mask_path is not None:
             mask_rgb = np.array(mask) / 255.0 #normalized rgb mask for saving
@@ -145,16 +151,40 @@ def split_image(image_names,
         if mask_path is not None:
             mask = np.pad(mask, ((100, 100), (100, 100)), mode='constant')
             mask_rgb = np.pad(mask_rgb, ((100, 100), (100, 100), (0, 0)), mode='constant')
+        else:
+            bw = np.pad(bw, ((100, 100), (100, 100)), mode='constant')
 
         if plot:
-            # plot image and mask for sanity
-            fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-            ax[0].imshow(image)
-            ax[1].imshow(mask, cmap='gray')
-            plt.show()
+            if mask_path is not None:
+                # plot image and mask for sanity
+                fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+                ax[0].imshow(image)
+                ax[1].imshow(mask, cmap='gray')
+                plt.show()
+            else:
+                # plot image and mask for sanity
+                fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+                ax[0].imshow(image)
+                ax[1].imshow(bw, cmap='gray')
+                plt.show()
+                plt.show()
 
         # label each component in mask and create bounding boxes
-        labels = ndimage.label(mask)[0]
+        if mask_path is not None:
+            labels = ndimage.label(mask)[0]
+        else:
+            # artifact removal
+            artifacts = ndimage.label(bw)[0]
+            size = 10000
+            sizes = np.bincount(artifacts.reshape(-1))
+            for j in range(1, len(sizes)):
+                if sizes[j] < size:
+                    bw[artifacts == j] = False
+
+
+            labels = ndimage.label(bw)[0]
+        
+
         bboxes = ndimage.find_objects(labels)
 
         # add padding to bounding boxes
@@ -177,10 +207,10 @@ def split_image(image_names,
                 plt.show()
             else:
                 fig = plt.figure(figsize=(5, 5))
-                fig.imshow(image)
+                plt.imshow(image)
                 for bbox in bboxes:
                     y, x = bbox
-                    fig.plot([x.start, x.start, x.stop, x.stop, x.start], [y.start, y.stop, y.stop, y.start, y.start], '--', color='r')
+                    plt.plot([x.start, x.start, x.stop, x.stop, x.start], [y.start, y.stop, y.stop, y.start, y.start], '--', color='r')
                 plt.tight_layout()
                 plt.show()
                 
