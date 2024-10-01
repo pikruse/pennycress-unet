@@ -10,6 +10,7 @@ from tqdm.auto import tqdm
 from ipywidgets import FloatProgress
 from scipy import ndimage
 from PIL import Image
+from IPython.display import clear_output
 
 sys.path.append('../')
 
@@ -122,13 +123,16 @@ def split_image(image_names,
     bounding_boxes = []
 
     # loop through each image
-    for image_name in image_names:
+    for i, image_name in enumerate(image_names):
+
+        clear_output(wait=True)
         
-        if os.path.exists(image_save_path + image_name):
+        # check if image has already been split 
+        if os.path.exists(image_save_path + image_name[:-4] + "_0.png"):
             print("Image already split: ", image_name)
             continue
 
-        print("Processing image: ", image_name)
+        print(f"Processing image {i+1}/{len(image_names)+1}: ", image_name)
 
         # load image and mask
         image = Image.open(image_path + image_name).convert('RGB')
