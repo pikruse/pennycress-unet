@@ -118,7 +118,6 @@ def split_image(image_names,
         None
     """
 
-
     # create empty list for bounding boxes
     bounding_boxes = []
 
