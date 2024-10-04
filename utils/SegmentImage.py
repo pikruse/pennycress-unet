@@ -172,7 +172,7 @@ def segment_image(model,
         pred_mask = pred_image.sum(axis=2) != 3
 
         # remove small artifacts
-        size = 500
+        size = 10000
         labels = ndimage.label(pred_mask)[0]
         sizes = np.bincount(labels.reshape(-1))
         for j in range(1, len(sizes)):
