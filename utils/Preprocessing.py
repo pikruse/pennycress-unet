@@ -154,8 +154,6 @@ def split_image(image_names,
         # if mask_path is not None:
         mask = np.pad(mask, ((100, 100), (100, 100)), mode='constant')
         mask_rgb = np.pad(mask_rgb, ((100, 100), (100, 100), (0, 0)), mode='constant')
-        # else:
-        #     bw = np.pad(bw, ((100, 100), (100, 100)), mode='constant')
 
         if plot:
             # if mask_path is not None:

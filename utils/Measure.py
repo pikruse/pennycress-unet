@@ -68,7 +68,9 @@ def measure_pods(pred_path,
         pred_image = Image.open(pred_path + pred_image_name)
         pred_image = np.array(pred_image) / 255
 
-        input_image = Image.open(input_path + pred_image_name)
+        # remove "pred_" from image name
+        input_name = pred_image_name[5:]
+        input_image = Image.open(input_path + input_name)
         input_image = np.array(input_image) / 255
 
         # revert white background to black
@@ -95,8 +97,8 @@ def measure_pods(pred_path,
         # loop through split images
         for i, bbox in enumerate(bboxes):
                 y, x = bbox
-                split_image = pred_image[y, x, :]
-                split_input = input_image[y, x, :]
+                split_image = pred_image[y, x, :].astype(np.uint8) * 255
+                split_input = input_image[y, x, :].astype(np.uint8) * 255
 
                 # calculate area
                 wing_area = Traits.area_calc(split_image[:, :, 0])
@@ -144,7 +146,7 @@ def measure_pods(pred_path,
                 image = split_image[:, :, 2].astype(np.int64)
 
                 # change image type and make 3-channel mask
-                image = image.astype(np.uint8) * 255
+                image = image.astype(np.uint8)
 
                 # define kernel for operations
                 kernel = np.ones((3,3),np.uint8)
@@ -303,9 +305,9 @@ def measure_pods(pred_path,
                                          seed_color[6],
                                          seed_color[7],
                                          seed_color[8]))
-
         return pod_measurements
-    
+
+    print("Measuring Pods...")
     with mp.Pool(mp.cpu_count()) as pool:
         result = tqdm(pool.imap(measure_func, image_names),
                 total = len(image_names))
@@ -313,7 +315,7 @@ def measure_pods(pred_path,
                measurements.extend(r)
            
     # save seed counts to csv
-    print(len(measurements))
+    print("Number of Pods Measured:", len(measurements))
     measurements = pd.DataFrame(measurements, columns=['image_name', 
                                                        'seed_count',
 
@@ -392,7 +394,6 @@ def measure_pods(pred_path,
 
     # wing area < .2 (outliers)
     measurements = measurements[measurements["wing area"] > .2]     
-
 
     if verbose:
             avg_seed_count = measurements["seed_count"].mean()

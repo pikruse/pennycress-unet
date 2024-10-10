@@ -44,6 +44,7 @@ def get_color_features(img, mask):
     Returns:
         Features (tuple): A 3-object tuple, each containing a 9-dim feature vector with each object representing a color trait.
     """
+    assert img.shape == mask.shape, "Image and mask must have the same shape."
 
     # get rgb, hsv, and lab color spaces
     rgb = img
@@ -187,7 +188,7 @@ def between_ratio(mask, feature1: str, feature2: str, type: str = "area"):
                        "seed": seed_area}
 
         # get ratio of feature between two classes
-        return feature_map[feature1] / feature_map[feature2]
+        return float(feature_map[feature1]) / float(feature_map[feature2])
 
     elif type == "perimeter":
         
@@ -197,7 +198,7 @@ def between_ratio(mask, feature1: str, feature2: str, type: str = "area"):
         # make dict to map strings to indices
         feature_map = {"wing": wing_perimeter, 
                        "env": env_perimeter, 
-                       "seed": seed_perimeter,}
+                       "seed": seed_perimeter}
 
         # get ratio of feature between two classes
-        return feature_map[feature1] / feature_map[feature2]
+        return float(feature_map[feature1]) / float(feature_map[feature2])
