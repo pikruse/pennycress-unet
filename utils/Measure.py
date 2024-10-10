@@ -29,47 +29,40 @@ from utils.Metrics import iou
 import utils.Traits as Traits
 import utils.SegmentImage as SegmentImage
 
-device = torch.device(GetLowestGPU(verbose=0))
 
-def measure_pods(pred_path,
+
+def measure_pods(image_name,
+                 pred_path,
                  input_path,
                  pod_save_path,
-                 measurement_save_path,
-                 image_names,
-                 verbose = True,
-                 plot = True):
-    
-    """
-    Function to measure the area of leaves, count seeds, and plot a segmented image.
-
-    Parameters:
-        pred_path (str): path to directory containing predicted segmentations
-        input_path (str): path to directory containing input images
-        pod_save_path (str): path to save pod images
-        measurement_save_path (str): path to save measurements
-        image_names (list): list of image names to process
-        verbose (bool): whether to print IoU scores
-        plot (bool): whether to plot the images
-    
-    Returns:
-        None
-    """
-
-    # create list to store seed counts and area
-    measurements = []
-
-    def measure_func(pred_image_name):
+                 verbose = False,
+                 plot = False):
         
+        """
+        Function to measure the area of leaves, count seeds, and plot a segmented image.
+
+        Parameters:
+                image_name (str): name of image to measure
+                pred_path (str): path to directory containing predicted segmentations
+                input_path (str): path to directory containing input images
+                pod_save_path (str): path to save pod images
+                verbose (bool): whether to print IoU scores
+                plot (bool): whether to plot the images
+
+        Returns:
+                None
+        """
+
         pod_measurements = []
-        
+
         ## PREPROCESSING
 
         # for a single image:
-        pred_image = Image.open(pred_path + pred_image_name)
+        pred_image = Image.open(pred_path + image_name)
         pred_image = np.array(pred_image) / 255
 
         # remove "pred_" from image name
-        input_name = pred_image_name[5:]
+        input_name = image_name[5:]
         input_image = Image.open(input_path + input_name)
         input_image = np.array(input_image) / 255
 
@@ -226,184 +219,83 @@ def measure_pods(pred_path,
                 ## BOOKKEEPING
 
                 # save split predicted image
-                save_name = pred_image_name[:-4] + "_" + str(i) + ".png"
+                save_name = image_name[:-4] + "_" + str(i) + ".png"
                 split_image = Image.fromarray((split_image * 255).astype(np.uint8))
                 split_image.save(pod_save_path + save_name)
 
                 # save seed count
                 pod_measurements.append((save_name,
-                                         # seed count 
-                                         seed_count, 
+                                                # seed count 
+                                                seed_count, 
 
-                                         # areas
-                                         wing_area, 
-                                         env_area, 
-                                         seed_area,
+                                                # areas
+                                                wing_area, 
+                                                env_area, 
+                                                seed_area,
 
-                                         # perimeters
-                                         wing_p,
-                                         env_p,
-                                         seed_p,
+                                                # perimeters
+                                                wing_p,
+                                                env_p,
+                                                seed_p,
 
-                                         # ...-to-total_area ratios
-                                         wing_to_total_area,
-                                         env_to_total_area,
-                                         seed_to_total_area,
+                                                # ...-to-total_area ratios
+                                                wing_to_total_area,
+                                                env_to_total_area,
+                                                seed_to_total_area,
 
-                                         # ...-to-total_perimeter ratios
-                                         wing_to_total_perimeter,
-                                         env_to_total_perimeter,
-                                         seed_to_total_perimeter,
+                                                # ...-to-total_perimeter ratios
+                                                wing_to_total_perimeter,
+                                                env_to_total_perimeter,
+                                                seed_to_total_perimeter,
 
-                                         # ...-to-seed ratios
-                                         env_to_seed_area,
-                                         wing_to_seed_area,
-                                         env_to_seed_perimeter,
-                                         wing_to_seed_perimeter,
+                                                # ...-to-seed ratios
+                                                env_to_seed_area,
+                                                wing_to_seed_area,
+                                                env_to_seed_perimeter,
+                                                wing_to_seed_perimeter,
 
-                                         # ...-to-env ratios
-                                         wing_to_env_area,
-                                         seed_to_env_area,
-                                         wing_to_env_perimeter,
-                                         seed_to_env_perimeter,
+                                                # ...-to-env ratios
+                                                wing_to_env_area,
+                                                seed_to_env_area,
+                                                wing_to_env_perimeter,
+                                                seed_to_env_perimeter,
 
-                                         # ...-to-wing ratios
-                                         seed_to_wing_area,
-                                         env_to_wing_area,
-                                         seed_to_wing_perimeter,
-                                         env_to_wing_perimeter,
+                                                # ...-to-wing ratios
+                                                seed_to_wing_area,
+                                                env_to_wing_area,
+                                                seed_to_wing_perimeter,
+                                                env_to_wing_perimeter,
 
-                                         # wing color
-                                         wing_color[0],
-                                         wing_color[1],
-                                         wing_color[2],
-                                         wing_color[3],
-                                         wing_color[4],
-                                         wing_color[5],
-                                         wing_color[6],
-                                         wing_color[7],
-                                         wing_color[8],
+                                                # wing color
+                                                wing_color[0],
+                                                wing_color[1],
+                                                wing_color[2],
+                                                wing_color[3],
+                                                wing_color[4],
+                                                wing_color[5],
+                                                wing_color[6],
+                                                wing_color[7],
+                                                wing_color[8],
 
-                                         # env color
-                                         env_color[0],
-                                         env_color[1],
-                                         env_color[2],
-                                         env_color[3],
-                                         env_color[4],
-                                         env_color[5],
-                                         env_color[6],
-                                         env_color[7],
-                                         env_color[8],
+                                                # env color
+                                                env_color[0],
+                                                env_color[1],
+                                                env_color[2],
+                                                env_color[3],
+                                                env_color[4],
+                                                env_color[5],
+                                                env_color[6],
+                                                env_color[7],
+                                                env_color[8],
 
-                                         # seed color
-                                         seed_color[0],
-                                         seed_color[1],
-                                         seed_color[2],
-                                         seed_color[3],
-                                         seed_color[4],
-                                         seed_color[5],
-                                         seed_color[6],
-                                         seed_color[7],
-                                         seed_color[8]))
+                                                # seed color
+                                                seed_color[0],
+                                                seed_color[1],
+                                                seed_color[2],
+                                                seed_color[3],
+                                                seed_color[4],
+                                                seed_color[5],
+                                                seed_color[6],
+                                                seed_color[7],
+                                                seed_color[8]))
         return pod_measurements
-
-    print("Measuring Pods...")
-    with mp.Pool(mp.cpu_count()) as pool:
-        result = tqdm(pool.imap(measure_func, image_names),
-                total = len(image_names))
-        for r in result:
-               measurements.extend(r)
-           
-    # save seed counts to csv
-    print("Number of Pods Measured:", len(measurements))
-    measurements = pd.DataFrame(measurements, columns=['image_name', 
-                                                       'seed_count',
-
-                                                        # areas
-                                                        'seed_area',
-                                                        'env_area',
-                                                        'wing_area',
-
-                                                        # perimeters
-                                                        'seed_perimeter',
-                                                        'env_perimeter',
-                                                        'wing_perimeter',
-
-                                                        # ...-to-total_area ratios
-                                                        'seed_to_total_area',
-                                                        'env_to_total_area',
-                                                        'wing_to_total_area',
-
-                                                        # ...-to-total_perimeter ratios
-                                                        'seed_to_total_perimeter',
-                                                        'env_to_total_perimeter',
-                                                        'wing_to_total_perimeter',
-
-                                                        # ...-to-seed ratios
-                                                        'env_to_seed_area',
-                                                        'wing_to_seed_area',
-                                                        'env_to_seed_perimeter',
-                                                        'wing_to_seed_perimeter',
-
-                                                        # ...-to-env ratios
-                                                        'wing_to_env_area',
-                                                        'seed_to_env_area',
-                                                        'wing_to_env_perimeter',
-                                                        'seed_to_env_perimeter',
-
-                                                        # ...-to-wing ratios
-                                                        'seed_to_wing_area',
-                                                        'env_to_wing_area',
-                                                        'seed_to_wing_perimeter',
-                                                        'env_to_wing_perimeter',
-                                                                
-                                                        # color
-                                                        'wing_r',
-                                                        'wing_g',
-                                                        'wing_b',
-                                                        'wing_h',
-                                                        'wing_s',
-                                                        'wing_v',
-                                                        'wing_l',
-                                                        'wing_a', 
-                                                        'wing_B',
-
-                                                        'env_r',
-                                                        'env_g',
-                                                        'env_b',
-                                                        'env_h',
-                                                        'env_s',
-                                                        'env_v',
-                                                        'env_l',
-                                                        'env_a',
-                                                        'env_B',
-
-                                                        'seed_r',
-                                                        'seed_g',
-                                                        'seed_b',
-                                                        'seed_h',
-                                                        'seed_s',
-                                                        'seed_v',
-                                                        'seed_l',
-                                                        'seed_a',
-                                                        'seed_B'])
-    
-    # remove outliers 
-    # seed count < 1 (outliers)
-    measurements = measurements[measurements["seed_count"] >= 1]
-
-    # wing area < .2 (outliers)
-    measurements = measurements[measurements["wing area"] > .2]     
-
-    if verbose:
-            avg_seed_count = measurements["seed_count"].mean()
-            avg_wing = measurements["wing area"].mean()
-            avg_env = measurements["env area"].mean()
-            avg_seed = measurements["seed area"].mean()
-
-            print(f"Avg. Seed Count: {avg_seed_count:.2f} seeds",
-                f"Avg. Wing Area: {avg_wing:.2f} cm",
-                f"Avg. Envelope Area: {avg_env:.2f} cm",
-                f"Avg. Seed Area: {avg_seed:.2f} cm")
-            
-    measurements.to_csv(measurement_save_path + "measurements.csv", index=False)

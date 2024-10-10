@@ -44,7 +44,7 @@ def get_color_features(img, mask):
     Returns:
         Features (tuple): A 3-object tuple, each containing a 9-dim feature vector with each object representing a color trait.
     """
-    assert img.shape == mask.shape, "Image and mask must have the same shape."
+    assert img.shape == mask.shape, f"Image and mask must have the same shape. Image shape: {img.shape}, Mask shape: {mask.shape}."
 
     # get rgb, hsv, and lab color spaces
     rgb = img
