@@ -26,12 +26,13 @@ from utils.BuildUNet import UNet
 from utils.GetLowestGPU import GetLowestGPU
 from utils.TileGenerator import TileGenerator
 from utils.Metrics import iou
-from utils.Traits import area_calc
+import utils.Traits as Traits
 import utils.SegmentImage as SegmentImage
 
 device = torch.device(GetLowestGPU(verbose=0))
 
 def measure_pods(pred_path,
+                 input_path,
                  pod_save_path,
                  measurement_save_path,
                  image_names,
@@ -43,6 +44,7 @@ def measure_pods(pred_path,
 
     Parameters:
         pred_path (str): path to directory containing predicted segmentations
+        input_path (str): path to directory containing input images
         pod_save_path (str): path to save pod images
         measurement_save_path (str): path to save measurements
         image_names (list): list of image names to process
@@ -64,8 +66,10 @@ def measure_pods(pred_path,
 
         # for a single image:
         pred_image = Image.open(pred_path + pred_image_name)
-        pred_image = np.array(pred_image) / 255 
+        pred_image = np.array(pred_image) / 255
 
+        input_image = Image.open(input_path + pred_image_name)
+        input_image = np.array(input_image) / 255
 
         # revert white background to black
         pred_image[pred_image.sum(axis=2) == 3] = 0
@@ -92,14 +96,46 @@ def measure_pods(pred_path,
         for i, bbox in enumerate(bboxes):
                 y, x = bbox
                 split_image = pred_image[y, x, :]
+                split_input = input_image[y, x, :]
 
                 # calculate area
-                wing_area = area_calc(split_image[:, :, 0])
-                env_area = area_calc(split_image[:, :, 1:2])
-                seed_area = area_calc(split_image[:, :, 2])
+                wing_area = Traits.area_calc(split_image[:, :, 0])
+                env_area = Traits.area_calc(split_image[:, :, 1:2])
+                seed_area = Traits.area_calc(split_image[:, :, 2])
 
-                # calculate other features
+                # get perimeters
+                wing_p, env_p, seed_p = Traits.perimeter(split_image)
 
+                # -to-total area ratios
+                wing_to_total_area = Traits.to_total_ratio(split_image, feature="wing")
+                env_to_total_area = Traits.to_total_ratio(split_image, feature="env")
+                seed_to_total_area = Traits.to_total_ratio(split_image, feature="seed")
+
+                # -to-total perimeter ratios
+                wing_to_total_perimeter = Traits.to_total_ratio(split_image, feature="wing", type="perimeter")
+                env_to_total_perimeter = Traits.to_total_ratio(split_image, feature="env", type="perimeter")
+                seed_to_total_perimeter = Traits.to_total_ratio(split_image, feature="seed", type="perimeter")
+
+                # -to-seed ratios
+                env_to_seed_area = Traits.between_ratio(split_image, feature1="env", feature2="seed", type="area")
+                wing_to_seed_area = Traits.between_ratio(split_image, feature1="wing", feature2="seed", type="area")
+                env_to_seed_perimeter = Traits.between_ratio(split_image, feature1="env", feature2="seed", type="perimeter")
+                wing_to_seed_perimeter = Traits.between_ratio(split_image, feature1="wing", feature2="seed", type="perimeter")
+
+                # -to-env ratios
+                seed_to_env_area = Traits.between_ratio(split_image, feature1="seed", feature2="env", type="area")
+                wing_to_env_area = Traits.between_ratio(split_image, feature1="wing", feature2="env", type="area")
+                seed_to_env_perimeter = Traits.between_ratio(split_image, feature1="seed", feature2="env", type="perimeter")
+                wing_to_env_perimeter = Traits.between_ratio(split_image, feature1="wing", feature2="env", type="perimeter")
+
+                # -to-wing ratios
+                seed_to_wing_area = Traits.between_ratio(split_image, feature1="seed", feature2="wing", type="area")
+                env_to_wing_area = Traits.between_ratio(split_image, feature1="env", feature2="wing", type="area")
+                seed_to_wing_perimeter = Traits.between_ratio(split_image, feature1="seed", feature2="wing", type="perimeter")
+                env_to_wing_perimeter = Traits.between_ratio(split_image, feature1="env", feature2="wing", type="perimeter")
+
+                # color
+                wing_color, env_color, seed_color = Traits.get_color_features(split_input, split_image)
 
                 if verbose:
                         print(f"wing area: {wing_area:.2f} cm", "|", f"env area: {env_area:.2f} cm", "|", f"seed area: {seed_area:.2f} cm")
@@ -193,7 +229,80 @@ def measure_pods(pred_path,
                 split_image.save(pod_save_path + save_name)
 
                 # save seed count
-                pod_measurements.append((save_name, seed_count, wing_area, env_area, seed_area))
+                pod_measurements.append((save_name,
+                                         # seed count 
+                                         seed_count, 
+
+                                         # areas
+                                         wing_area, 
+                                         env_area, 
+                                         seed_area,
+
+                                         # perimeters
+                                         wing_p,
+                                         env_p,
+                                         seed_p,
+
+                                         # ...-to-total_area ratios
+                                         wing_to_total_area,
+                                         env_to_total_area,
+                                         seed_to_total_area,
+
+                                         # ...-to-total_perimeter ratios
+                                         wing_to_total_perimeter,
+                                         env_to_total_perimeter,
+                                         seed_to_total_perimeter,
+
+                                         # ...-to-seed ratios
+                                         env_to_seed_area,
+                                         wing_to_seed_area,
+                                         env_to_seed_perimeter,
+                                         wing_to_seed_perimeter,
+
+                                         # ...-to-env ratios
+                                         wing_to_env_area,
+                                         seed_to_env_area,
+                                         wing_to_env_perimeter,
+                                         seed_to_env_perimeter,
+
+                                         # ...-to-wing ratios
+                                         seed_to_wing_area,
+                                         env_to_wing_area,
+                                         seed_to_wing_perimeter,
+                                         env_to_wing_perimeter,
+
+                                         # wing color
+                                         wing_color[0],
+                                         wing_color[1],
+                                         wing_color[2],
+                                         wing_color[3],
+                                         wing_color[4],
+                                         wing_color[5],
+                                         wing_color[6],
+                                         wing_color[7],
+                                         wing_color[8],
+
+                                         # env color
+                                         env_color[0],
+                                         env_color[1],
+                                         env_color[2],
+                                         env_color[3],
+                                         env_color[4],
+                                         env_color[5],
+                                         env_color[6],
+                                         env_color[7],
+                                         env_color[8],
+
+                                         # seed color
+                                         seed_color[0],
+                                         seed_color[1],
+                                         seed_color[2],
+                                         seed_color[3],
+                                         seed_color[4],
+                                         seed_color[5],
+                                         seed_color[6],
+                                         seed_color[7],
+                                         seed_color[8]))
 
         return pod_measurements
     
@@ -205,11 +314,77 @@ def measure_pods(pred_path,
            
     # save seed counts to csv
     print(len(measurements))
-    measurements = pd.DataFrame(measurements, columns=["image_name", 
-                                                       "seed_count", 
-                                                       "wing area", 
-                                                       "env area", 
-                                                       "seed area",])
+    measurements = pd.DataFrame(measurements, columns=['image_name', 
+                                                       'seed_count',
+
+                                                        # areas
+                                                        'seed_area',
+                                                        'env_area',
+                                                        'wing_area',
+
+                                                        # perimeters
+                                                        'seed_perimeter',
+                                                        'env_perimeter',
+                                                        'wing_perimeter',
+
+                                                        # ...-to-total_area ratios
+                                                        'seed_to_total_area',
+                                                        'env_to_total_area',
+                                                        'wing_to_total_area',
+
+                                                        # ...-to-total_perimeter ratios
+                                                        'seed_to_total_perimeter',
+                                                        'env_to_total_perimeter',
+                                                        'wing_to_total_perimeter',
+
+                                                        # ...-to-seed ratios
+                                                        'env_to_seed_area',
+                                                        'wing_to_seed_area',
+                                                        'env_to_seed_perimeter',
+                                                        'wing_to_seed_perimeter',
+
+                                                        # ...-to-env ratios
+                                                        'wing_to_env_area',
+                                                        'seed_to_env_area',
+                                                        'wing_to_env_perimeter',
+                                                        'seed_to_env_perimeter',
+
+                                                        # ...-to-wing ratios
+                                                        'seed_to_wing_area',
+                                                        'env_to_wing_area',
+                                                        'seed_to_wing_perimeter',
+                                                        'env_to_wing_perimeter',
+                                                                
+                                                        # color
+                                                        'wing_r',
+                                                        'wing_g',
+                                                        'wing_b',
+                                                        'wing_h',
+                                                        'wing_s',
+                                                        'wing_v',
+                                                        'wing_l',
+                                                        'wing_a', 
+                                                        'wing_B',
+
+                                                        'env_r',
+                                                        'env_g',
+                                                        'env_b',
+                                                        'env_h',
+                                                        'env_s',
+                                                        'env_v',
+                                                        'env_l',
+                                                        'env_a',
+                                                        'env_B',
+
+                                                        'seed_r',
+                                                        'seed_g',
+                                                        'seed_b',
+                                                        'seed_h',
+                                                        'seed_s',
+                                                        'seed_v',
+                                                        'seed_l',
+                                                        'seed_a',
+                                                        'seed_B'])
     
     # remove outliers 
     # seed count < 1 (outliers)
