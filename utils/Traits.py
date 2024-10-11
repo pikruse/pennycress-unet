@@ -46,13 +46,18 @@ def get_color_features(img, mask):
     """
     assert img.shape == mask.shape, f"Image and mask must have the same shape. Image shape: {img.shape}, Mask shape: {mask.shape}."
 
+    img, mask = img.astype(np.uint8), mask.astype(np.uint8)
+
     # get rgb, hsv, and lab color spaces
     rgb = img
     hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
     lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB)
+
     r, g, b = rgb.astype(float).transpose(2, 0, 1)
     h, s, v = hsv.astype(float).transpose(2, 0, 1)
     l, a, B = lab.astype(float).transpose(2, 0, 1)
+
+    #print(f"l: {np.unique(l)}, a: {np.unique(a)}, B: {np.unique(B)}")
 
     # extract color features for segmentation classes
     # concat all feature maps into a tensor, index in with class label mask

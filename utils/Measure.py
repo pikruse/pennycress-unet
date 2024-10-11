@@ -30,7 +30,7 @@ import utils.Traits as Traits
 import utils.SegmentImage as SegmentImage
 
 
-
+reload(Traits)
 def measure_pods(image_name,
                  pred_path,
                  input_path,
@@ -59,19 +59,19 @@ def measure_pods(image_name,
 
         # for a single image:
         pred_image = Image.open(pred_path + image_name)
-        pred_image = np.array(pred_image) / 255
+        pred_image = np.array(pred_image).astype(np.uint8) / 255
 
         # remove "pred_" from image name
         input_name = image_name[5:]
         input_image = Image.open(input_path + input_name)
-        input_image = np.array(input_image) / 255
+        input_image = np.array(input_image).astype(np.uint8) / 255
 
         # revert white background to black
         pred_image[pred_image.sum(axis=2) == 3] = 0
 
         # pad image so that we can draw bounding box around it
         pred_image = np.pad(pred_image, ((100, 100), (100, 100), (0, 0)), mode='constant')
-        input_image = np.pad(input_image, ((100, 100), (100, 100), (0, 0)), mode='constant')
+        input_image = np.pad(input_image, ((100, 100), (100, 100), (0, 0)), mode='edge')
 
         # extract bool mask for object detection
         bool_mask = np.array(pred_image).sum(axis=2) > .5 # convert to boolean mask
@@ -91,8 +91,11 @@ def measure_pods(image_name,
         # loop through split images
         for i, bbox in enumerate(bboxes):
                 y, x = bbox
-                split_image = pred_image[y, x, :].astype(np.uint8) * 255
-                split_input = input_image[y, x, :].astype(np.uint8) * 255
+                split_image = pred_image[y, x, :]
+                split_input = input_image[y, x, :]
+
+                split_image = (split_image * 255.0).astype(np.uint8)
+                split_input = (split_input * 255.0).astype(np.uint8)
                 
                 if split_image.shape != split_input.shape:
                         print(f"WARNING: {image_name}... Shapes don't match!")
@@ -135,9 +138,6 @@ def measure_pods(image_name,
 
                 # color
                 wing_color, env_color, seed_color = Traits.get_color_features(split_input, split_image)
-
-                if verbose:
-                        print(f"wing area: {wing_area:.2f} cm", "|", f"env area: {env_area:.2f} cm", "|", f"seed area: {seed_area:.2f} cm")
 
                 # extract only the blue channel (seeds) from the image
                 image = split_image[:, :, 2].astype(np.int64)
