@@ -71,6 +71,7 @@ def measure_pods(image_name,
 
         # pad image so that we can draw bounding box around it
         pred_image = np.pad(pred_image, ((100, 100), (100, 100), (0, 0)), mode='constant')
+        input_image = np.pad(input_image, ((100, 100), (100, 100), (0, 0)), mode='constant')
 
         # extract bool mask for object detection
         bool_mask = np.array(pred_image).sum(axis=2) > .5 # convert to boolean mask
@@ -92,6 +93,9 @@ def measure_pods(image_name,
                 y, x = bbox
                 split_image = pred_image[y, x, :].astype(np.uint8) * 255
                 split_input = input_image[y, x, :].astype(np.uint8) * 255
+                
+                if split_image.shape != split_input.shape:
+                        print(f"WARNING: {image_name}... Shapes don't match!")
 
                 # calculate area
                 wing_area = Traits.area_calc(split_image[:, :, 0])

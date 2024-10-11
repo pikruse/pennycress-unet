@@ -186,9 +186,12 @@ def between_ratio(mask, feature1: str, feature2: str, type: str = "area"):
         feature_map = {"wing": wing_area, 
                        "env": env_area, 
                        "seed": seed_area}
-
-        # get ratio of feature between two classes
-        return float(feature_map[feature1]) / float(feature_map[feature2])
+        
+        if feature_map[feature2] == 0:
+            return 0
+        else:
+            # get ratio of feature between two classes
+            return float(feature_map[feature1]) / float(feature_map[feature2])
 
     elif type == "perimeter":
         
@@ -201,4 +204,7 @@ def between_ratio(mask, feature1: str, feature2: str, type: str = "area"):
                        "seed": seed_perimeter}
 
         # get ratio of feature between two classes
-        return float(feature_map[feature1]) / float(feature_map[feature2])
+        if feature_map[feature2] == 0:
+            return 0
+        else:
+            return float(feature_map[feature1]) / float(feature_map[feature2])
