@@ -69,9 +69,9 @@ def get_color_features(img, mask):
     seed_features = features[seed]
 
     # aggregate features into phenotypes
-    wing_phenotype = wing_features.mean(axis=0)
-    env_phenotype = env_features.mean(axis=0)
-    seed_phenotype = seed_features.mean(axis=0)
+    wing_phenotype = wing_features.mean(axis=0) if wing_features.size > 0 else np.zeros(9)
+    env_phenotype = env_features.mean(axis=0) if env_features.size > 0 else np.zeros(9)
+    seed_phenotype = seed_features.mean(axis=0) if seed_features.size > 0 else np.zeros(9)
 
     return (wing_phenotype, env_phenotype, seed_phenotype)
 
