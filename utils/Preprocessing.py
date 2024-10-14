@@ -126,10 +126,10 @@ def split_image(image_names,
 
         clear_output(wait=True)
         
-        # check if image has already been split 
-        if os.path.exists(image_save_path + image_name[:-4] + "_0.png"):
-            print("Image already split: ", image_name)
-            continue
+        # # check if image has already been split 
+        # if os.path.exists(image_save_path + image_name[:-4] + "_0.png"):
+        #     print("Image already split: ", image_name)
+        #     continue
 
         print(f"Processing image {i+1}/{len(image_names)+1}: ", image_name)
 
