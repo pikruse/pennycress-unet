@@ -29,11 +29,12 @@ class TileGenerator(Dataset):
         split (str): dataset mode (train or val)
         n_pad (int): padding size
         distance_weights (bool): whether to use distance weighting in loss
+        [optional] border_weight (float): weight for border pixels in distance map
     
     Returns:
         tile (torch tensor): input tile (C x H x W)
         mask (torch tensor): target mask (C x H x W)
-        (optional) distance weight map (torch tensor): distance weight map (C x H x W) appended to last mask dimension
+        [optional] distance weight map (torch tensor): distance weight map (C x H x W) appended to last mask dimension
     """
     
     def __init__(self,
@@ -42,7 +43,8 @@ class TileGenerator(Dataset):
                 tile_size,
                 split, #split is a string specifying 'train' or 'val',
                 n_pad,
-                distance_weights = False
+                distance_weights = False,
+                **kwargs
                 ):
         #init attrs/methods from dataset class w/ super()
         super().__init__()
@@ -52,6 +54,14 @@ class TileGenerator(Dataset):
         self.split = split
         self.width = tile_size//2
         self.distance_weights = distance_weights
+
+        # set border weight value if specified
+        if self.distance_weights and 'border_weight' in kwargs:
+            self.border_weight = kwargs['border_weight']
+
+        # set default border weight value if not specified
+        elif self.distance_weights and 'border_weight' not in kwargs:
+            self.border_weight = .5
 
         # extract image/row/col indices from mask pixels
         self.indices = [] #list pixel indices we want to extract tiles from
@@ -106,7 +116,7 @@ class TileGenerator(Dataset):
         # create distance weights
         if self.distance_weights:
             seed = mask[:, :, 3] > 0.5
-            weights = DistanceMap.distance_map_bw(seed, wb = .5, bwidth = 5)
+            weights = DistanceMap.distance_map_bw(seed, wb = 1.5, bwidth = 5)
         
         #convert to torch tensor
         tile = torch.from_numpy(tile.transpose(2, 0, 1)) #convert to torch tensor and transpose to channels first
