@@ -56,12 +56,15 @@ class TileGenerator(Dataset):
         self.distance_weights = distance_weights
 
         # set border weight value if specified
-        if self.distance_weights and 'border_weight' in kwargs:
-            self.border_weight = kwargs['border_weight']
-
-        # set default border weight value if not specified
-        elif self.distance_weights and 'border_weight' not in kwargs:
-            self.border_weight = .5
+        if self.distance_weights:
+            if "border_weight" in kwargs:
+                self.border_weight = kwargs["border_weight"]
+            else:
+                self.border_weight = 0.5
+            if "bwidth" in kwargs:
+                self.bwidth = kwargs["bwidth"]
+            else:
+                self.bwidth = 5
 
         # extract image/row/col indices from mask pixels
         self.indices = [] #list pixel indices we want to extract tiles from

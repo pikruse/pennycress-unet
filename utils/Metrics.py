@@ -13,6 +13,9 @@ def iou(y_true, y_pred):
         IoU (float): Intersection over Union score
     """
 
+    if y_true.shape != y_pred.shape:
+        raise ValueError("Shape mismatch: im1 and im2 must have the same shape.")
+
     # flatten arrays
     y_true = y_true.flatten()
     y_pred = y_pred.flatten()
