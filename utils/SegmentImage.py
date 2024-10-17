@@ -132,6 +132,25 @@ def segment_image(model,
         # remove bg channel
         pred_image = preds[:, :, 1:]
 
+
+        # ----------------
+        ## ARTFACT REMOVAL
+        # ----------------
+
+        # create binary mask
+        pred_mask = pred_image.sum(axis=2) != 0
+
+        # remove small artifacts
+        size = 10000
+        labels = ndimage.label(pred_mask)[0]
+        sizes = np.bincount(labels.reshape(-1))
+        for j in range(1, len(sizes)):
+            if sizes[j] < size:
+                pred_mask[labels == j] = False
+
+        pred_mask = cv2.cvtColor(pred_mask.astype(np.uint8), cv2.COLOR_GRAY2BGR)
+        pred_image[pred_mask.sum(2) == 0] = 0
+
         # ---------------
         # IOU
         # ---------------
@@ -158,30 +177,11 @@ def segment_image(model,
                 print(f"Jaccard Distance (IoU) for envelope: {env_iou:.4f}\n")
                 print(f"Jaccard Distance (IoU) for seeds: {seed_iou:.4f}\n")
 
-        # ----------------
-        ## ARTFACT REMOVAL
-        # ----------------
-
         # set bg to white
         pred_image[pred_image.sum(axis=2) == 0] = 1
 
         if mask_path is not None:
             mask[mask.sum(axis=2) == 0] = 1
-
-        # create binary mask
-        pred_mask = pred_image.sum(axis=2) != 3
-
-        # remove small artifacts
-        size = 10000
-        labels = ndimage.label(pred_mask)[0]
-        sizes = np.bincount(labels.reshape(-1))
-        for j in range(1, len(sizes)):
-            if sizes[j] < size:
-                pred_mask[labels == j] = False
-
-        pred_mask = cv2.cvtColor(pred_mask.astype(np.uint8), cv2.COLOR_GRAY2BGR)
-
-        pred_image[pred_mask.sum(2) == 0] = 1
 
         # ----------------
         ## PLOTTING
