@@ -1,6 +1,6 @@
 import os, sys
 
-def get_file_names(path: str, extension: str = ".png"):
+def GetFileNames(path: str, extension: str = ".png"):
 
     """
     Function to get a list of names for files with a given extension in a directory
