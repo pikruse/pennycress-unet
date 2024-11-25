@@ -82,7 +82,7 @@ def train_model(model,
         None
     """
 
-    # non-customizable options
+   # non-customizable options
     iter_update = 'train loss {1:.4e}, val loss {2:.4e}\r'
     best_val_loss = None # initialize best validation loss
     last_improved = 0 # start early stopping counter
