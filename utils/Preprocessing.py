@@ -99,6 +99,7 @@ def mask_preprocessing(image_path,
 def split_image(image_names,
                 image_path,
                 image_save_path,
+                mask_names = None,
                 mask_path=None,
                 mask_save_path=None,
                 plot = False):
@@ -136,8 +137,10 @@ def split_image(image_names,
         # load image and mask
         image = Image.open(image_path + image_name).convert('RGB')
 
-        # if mask_path is not None:
-        mask = Image.open(mask_path + image_name).convert('RGB')
+        if mask_names is None:
+            mask = Image.open(mask_path + image_name).convert('RGB')
+        else:
+            mask = Image.open(mask_path + mask_names[i]).convert('RGB')
 
         # convert to numpy array and normalize
         image = np.array(image) / 255.0
@@ -229,9 +232,9 @@ def split_image(image_names,
                 split_mask = Image.fromarray((split_mask * 255).astype(np.uint8))
 
             # save img, msk
-            split_image.save(image_save_path + image_name[:-4] + "_" + str(i) + ".png")
             if mask_path is not None:
                 split_mask.save(mask_save_path + image_name[:-4] + "_" + str(i) + ".png")
+            split_image.save(image_save_path + image_name[:-4] + "_" + str(i) + ".png")
 
     print("Image Splitting Complete!")
 
