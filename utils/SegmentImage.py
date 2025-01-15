@@ -95,26 +95,28 @@ def segment_image(model,
         # Double for loop over rows and columns with step size of 32 used for tile generation
         rows = range(0, image.shape[0]-(3*32), 32)
         cols = range(0, image.shape[1]-(3*32), 32)
-        with tqdm(total=len(rows)*len(cols)) as pbar:
-            for row in range(0, image.shape[0]-(3*32), 32): #don't index completely to the edge - otherwise, we will be indexing into a space that doesn't exist in the image
-                for col in range(0, image.shape[1]-(3*32), 32):
+        model.eval()
+        with torch.no_grad():
+            with tqdm(total=len(rows)*len(cols)) as pbar:
+                for row in range(0, image.shape[0]-(3*32), 32): #don't index completely to the edge - otherwise, we will be indexing into a space that doesn't exist in the image
+                    for col in range(0, image.shape[1]-(3*32), 32):
 
-                    # select image tile
-                    tile = image[row:row+128, col:col+128]
+                        # select image tile
+                        tile = image[row:row+128, col:col+128]
 
-                    # make prediction and store the *center context* in global prb. map
-                    unet_input = torch.tensor(tile, dtype=torch.float32).to(device).permute(2, 0, 1).unsqueeze(0)
-                    prediction = model(unet_input) 
+                        # make prediction and store the *center context* in global prb. map
+                        unet_input = torch.tensor(tile, dtype=torch.float32).to(device).permute(2, 0, 1).unsqueeze(0)
+                        prediction = model(unet_input) 
 
-                    # softmax output
-                    prediction = torch.nn.functional.softmax(prediction, dim=1)
+                        # softmax output
+                        prediction = torch.nn.functional.softmax(prediction, dim=1)
 
-                    # shuffle to be rows-cols-channels order and only take the center 64x64 square
-                    prediction = prediction[0].permute(1, 2, 0)[32:-32, 32:-32, :]
+                        # shuffle to be rows-cols-channels order and only take the center 64x64 square
+                        prediction = prediction[0].permute(1, 2, 0)[32:-32, 32:-32, :]
 
-                    # add predicted probabilities to prb map at index
-                    global_prb_map[row+32:row+96, col+32:col+96, :] += prediction.detach().cpu().numpy()
-                    pbar.update(1)
+                        # add predicted probabilities to prb map at index
+                        global_prb_map[row+32:row+96, col+32:col+96, :] += prediction.detach().cpu().numpy()
+                        pbar.update(1)
 
         # now that we have full prb. map, remove the padding 
         global_prb_map = global_prb_map[32:-(32+rpad), 32:-(32+cpad), :]
