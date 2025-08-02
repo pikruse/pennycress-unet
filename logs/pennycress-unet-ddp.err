@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/lustre/orion/syb111/proj-shared/Personal/krusepi/projects/phenotyping/pennycress-unet/scripts/train_unet_ddp.py", line 25, in <module>
+    import utils.Train as Train
+  File "/lustre/orion/syb111/proj-shared/Personal/krusepi/projects/phenotyping/pennycress-unet/utils/Train.py", line 14, in <module>
+    from IPython.display import clear_output
+ModuleNotFoundError: No module named 'IPython'
+srun: error: frontier10361: task 0: Exited with exit code 1
+srun: Terminating StepId=3633921.0

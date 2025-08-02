@@ -1,5 +1,6 @@
 # import necessary libraries
 import os, sys, glob, argparse
+from pathlib import Path
 import wandb
 import socket
 import math
@@ -17,8 +18,8 @@ from PIL import Image
 from importlib import reload # when you make changes to a .py, force reload imports
 from DGXutils import GetFileNames, GetLowestGPU
 
-# custom imports
-sys.path.append('../')
+# make path start at root
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from utils.GetLR import get_lr
 import utils.Train as Train
@@ -169,6 +170,10 @@ def main():
         border_weight=5
         )
 
+    # init ddp samplers
+    train_sampler = DistributedSampler(train_generator, shuffle=True)
+    val_sampler = DistributedSampler(val_generator, shuffle=False)
+
     #### Train Model ####
     # define our loss function, optimizer
     reload(WeightedCrossEntropy)
@@ -212,19 +217,21 @@ def main():
         # checkpoint
         #
         # set epoch for sampler
+        train_sampler.set_epoch(iter_num)
 
         # shuffle dataloaders
         train_loader = DataLoader(
             train_generator, 
             batch_size=args.batch_size,
-            shuffle=True,
-            pin_memory=True)
-        
+            pin_memory=True,
+            sampler=train_sampler
+        )
+
         val_loader = DataLoader(
             val_generator, 
             batch_size=args.batch_size,
-            shuffle=False,
-            pin_memory=True)
+            pin_memory=True,
+            sampler=val_sampler)
 
         # estimate loss
         model.eval()

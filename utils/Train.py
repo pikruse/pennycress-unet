@@ -11,7 +11,6 @@ from tqdm.auto import tqdm
 from PIL import Image
 from importlib import reload
 from torch.utils.data import DataLoader
-from IPython.display import clear_output
 
 # custom imports
 sys.path.append('../')
