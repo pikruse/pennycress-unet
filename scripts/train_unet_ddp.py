@@ -29,6 +29,7 @@ import utils.BuildUNet as BuildUNet
 import utils.TileGenerator as TG
 import utils.DistanceMap as DistanceMap
 
+os.environ["MIOPEN_FIND_MODE"] = "NORMAL"
 #### Helper Setup ###
 def setup_ddp():
     """initialize torch.distributed for rocm"""
@@ -85,7 +86,7 @@ def main():
         'out_channels': 4,
         'conv_per_block': 3,
         'dropout_rate': 0.1,
-        'hidden_activation': torch.nn.SELU(),
+        'hidden_activation': torch.nn.GELU(),
         'output_activation': None
     }
     unet = BuildUNet.UNet(**model_kwargs).to(device)
@@ -96,8 +97,8 @@ def main():
 
     #### Data Loading ####
     # define options
-    img_path = '../data/train/train_images_by_pod/'
-    mask_path = '../data/train/train_masks_by_pod/'
+    img_path = 'data/train/train_images_by_pod/'
+    mask_path = 'data/train/train_masks_by_pod/'
 
     # load images and masks into list
     img_names = GetFileNames(img_path,
@@ -178,14 +179,14 @@ def main():
     # define our loss function, optimizer
     reload(WeightedCrossEntropy)
     if distance_weights:
-        loss_function = WeightedCrossEntropy.WeightedCrossEntropy(device="cuda",)
+        loss_function = WeightedCrossEntropy.WeightedCrossEntropy(device=device)
     else:
         loss_function = torch.nn.CrossEntropyLoss()
         
     optimizer = torch.optim.Adam(unet.parameters(), lr=0.001)
 
     # log options
-    chckpnt_path = '../checkpoints/checkpoint_{0}_up.pt'
+    chckpnt_path = 'checkpoints/checkpoint_{0}_up.pt'
 
     # lr options
     warmup_iters = 1000
@@ -319,6 +320,14 @@ def main():
 
                 optimizer.step()
                 optimizer.zero_grad(set_to_none=True)
+
+                # update wandb
+                if is_main(rank):
+                    wandb.log({
+                        "train_loss": loss.item(),
+                        "lr": lr,
+                        "iter_num": iter_num
+                    })
 
                 # update book keeping
                 pbar.update(1)

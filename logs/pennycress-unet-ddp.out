@@ -1,1 +1,16 @@
 Initializing Conda environment:
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, Default, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, Default, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, OddC, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 64, 128, 16, Default, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 64, 128, 16, Default, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 256, 128, 16, Default, 32, 32, 4, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, Default, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 64, 32, 16, OddC, 32, 32, 2, 1, 4, 4, 1, 1, 1, 1>
