@@ -1,4 +1,5 @@
 **/pennycress_pods
 **/checkpoints
 **/data
+**/logs
 .env
