@@ -6,7 +6,6 @@
 #SBATCH -p extended 
 #SBATCH -q debug
 #SBATCH -C nvme
-#SBATCH --gres=gpu:8
 #SBATCH -o logs/%x.out # Out Path
 #SBATCH -e logs/%x.err # Err Path
 #SBATCH --open-mode=truncate # Overwrite .out/.err
@@ -31,9 +30,19 @@ export MIOPEN_FIND_MODE="NORMAL"
 export MIOPEN_FIND_MODE=NORMAL
 export MIOPEN_DEBUG_CONV_DIRECT=1
 export MIOPEN_DEBUG_CONV_WINOGRAD=0
-export MIOPEN_DISABLE_CACHE=1  # Use only if the cache is corrupted and can't be used
-export HIP_LAUNCH_BLOCKING=1
+export MIOPEN_DISABLE_CACHE=1 # this is needed, otherwise conv2d errors out
 
-srun --ntasks-per-node=8 --gpus-per-node=8 --nodes=2 \
+# NCCL settings
+export HSA_FORCE_FINE_GRAIN_PCIE=1
+export NCCL_SOCKET_IFNAME=hsn0 
+export TORCH_NCCL_ASYNC_ERROR_HANDLING=0
+
+# DDP settings
+export MASTER_ADDR=$(hostname -i)
+export MASTER_PORT=6000
+
+srun -N 2 --ntasks=16 --ntasks-per-node=8 --gpus-per-task=1 \
+    --cpu-bind=cores \
     --export=ALL \
-    python -u scripts/train_unet_ddp.py --batch_size 64 --num_iters 100_000    
+    --kill-on-bad-exit=1 \
+    python -u scripts/train_unet_ddp.py --batch_size 32 --num_iters 100_000    

@@ -1,19 +1,158 @@
 Initializing Conda environment:
-Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, Default, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+[Rank 11] Available devices: 1
+[Rank 12] Available devices: 1
+[Rank 10] Available devices: 1
+[Rank 9] Available devices: 1
+[Rank 14] Available devices: 1
+[Rank 8] Available devices: 1
+[Rank 13] Available devices: 1
+[Rank 15] Available devices: 1
+[Rank 0] Available devices: 1
+[Rank 4] Available devices: 1
+[Rank 2] Available devices: 1
+[Rank 7] Available devices: 1
+[Rank 5] Available devices: 1
+[Rank 3] Available devices: 1
+[Rank 1] Available devices: 1
+[Rank 6] Available devices: 1
+[Rank 10] Initialized on device cuda:0
+[Rank 10] Visible CUDA devices: 1
+[Rank 13] Initialized on device cuda:0
+[Rank 13] Visible CUDA devices: 1
+[Rank 1] Initialized on device cuda:0
+[Rank 1] Visible CUDA devices: 1
+[Rank 12] Initialized on device cuda:0
+[Rank 12] Visible CUDA devices: 1
+[Rank 3] Initialized on device cuda:0
+[Rank 3] Visible CUDA devices: 1
+[Rank 8] Initialized on device cuda:0
+[Rank 8] Visible CUDA devices: 1
+[Rank 7] Initialized on device cuda:0
+[Rank 7] Visible CUDA devices: 1
+[Rank 5] Initialized on device cuda:0
+[Rank 5] Visible CUDA devices: 1
+[Rank 6] Initialized on device cuda:0
+[Rank 6] Visible CUDA devices: 1
+[Rank 11] Initialized on device cuda:0
+[Rank 11] Visible CUDA devices: 1
+[Rank 2] Initialized on device cuda:0
+[Rank 2] Visible CUDA devices: 1
+[Rank 9] Initialized on device cuda:0
+[Rank 9] Visible CUDA devices: 1
+[Rank 14] Initialized on device cuda:0
+[Rank 14] Visible CUDA devices: 1
+[Rank 15] Initialized on device cuda:0
+[Rank 15] Visible CUDA devices: 1
+[Rank 4] Initialized on device cuda:0
+[Rank 4] Visible CUDA devices: 1
+[Rank 0] Initialized on device cuda:0
+[Rank 0] Visible CUDA devices: 1
+loading 281 images and masks from data/train/train_images_by_pod/ and data/train/train_masks_by_pod/
+loaded 281 images and masks
+Creating data generators...
+created train and val generators.
+Starting training...
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, OddC, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, OddC, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, OddC, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, OddC, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, OddC, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, OddC, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, OddC, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, OddC, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, OddC, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, OddC, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, OddC, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, OddC, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, OddC, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, OddC, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, OddC, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 128, 16, OddC, 32, 32, 2, 2, 1, 1, 4, 1, 1, 1>
 Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
-Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, Default, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
 Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, OddC, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
-Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 64, 128, 16, Default, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
-Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 64, 128, 16, Default, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, OddC, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, OddC, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, OddC, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, OddC, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, OddC, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, OddC, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, OddC, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, OddC, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, OddC, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, OddC, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, OddC, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, OddC, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, OddC, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, Default, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
 Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
 Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
 Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
 Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
 Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
-Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 256, 128, 16, Default, 32, 32, 4, 2, 4, 4, 4, 1, 1, 1>
-Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 32, 64, 16, Default, 32, 32, 1, 2, 4, 4, 4, 1, 1, 1>
 Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
-Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<64, 64, 32, 16, OddC, 32, 32, 2, 1, 4, 4, 1, 1, 1, 1>
-[1;34mwandb[0m: 
-[1;34mwandb[0m: 🚀 View run [33mvisionary-plant-6[0m at: [34mhttps://wandb.ai/jail-ai/pennycress-unet/runs/wlqxwzrh[0m
-[1;34mwandb[0m: Find logs at: [1;35mwandb/run-20250802_005025-wlqxwzrh/logs[0m
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>
+Params set by AI: DeviceGroupedConvFwdMultipleABD_Xdl_CShuffle<256, 128, 64, 16, OddC, 32, 32, 2, 1, 4, 4, 4, 1, 1, 1>

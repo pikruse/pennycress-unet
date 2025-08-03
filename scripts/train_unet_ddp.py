@@ -1,5 +1,6 @@
 # import necessary libraries
 import os, sys, glob, argparse
+import subprocess
 from pathlib import Path
 import wandb
 import socket
@@ -30,33 +31,46 @@ import utils.TileGenerator as TG
 import utils.DistanceMap as DistanceMap
 
 os.environ["MIOPEN_FIND_MODE"] = "NORMAL"
-#### Helper Setup ###
-def setup_ddp():
-    """initialize torch.distributed for rocm"""
-    if dist.is_initialized():
-        return dist.get_rank(), dist.get_world_size()
-    
-    # set global vars for DDP
-    rank = int(os.environ.get("RANK", os.environ.get("SLURM_PROCID", 0)))
-    world_size = int(os.environ.get("WORLD_SIZE", os.environ.get("SLURM_NTASKS", 1)))
-    local_rank = int(os.environ.get("LOCAL_RANK", os.environ.get("SLURM_LOCALID", 0)))
 
-    # propagate to environment
+#### Helper Setup ###
+
+def extract_master_addr():
+    try:
+        # Use scontrol to get the hostname of the first node
+        nodelist = os.environ["SLURM_NODELIST"]
+        node = subprocess.check_output(
+            ["scontrol", "show", "hostname", nodelist]
+        ).decode().splitlines()[0]
+        return node
+    except Exception as e:
+        print(f"[WARN] Failed to extract master address from SLURM_NODELIST: {e}")
+        return "localhost"
+
+
+def setup_ddp():
+    rank = int(os.environ["SLURM_PROCID"])
+    world_size = int(os.environ["SLURM_NTASKS"])
+
+    os.environ.setdefault("MASTER_PORT", "6000")
+    os.environ.setdefault("MASTER_ADDR", subprocess.check_output(
+        ["scontrol", "show", "hostname", os.environ["SLURM_NODELIST"]]
+    ).decode().splitlines()[0])
+
     os.environ["RANK"] = str(rank)
     os.environ["WORLD_SIZE"] = str(world_size)
-    os.environ["LOCAL_RANK"] = str(local_rank)
 
-    # add master_addr for non-torchrun jobs
-    if "MASTER_ADDR" not in os.environ:
-        # get first node in the nodelist (fine for single node jobs)
-        nodelist = os.environ.get("SLURM_NODELIST")
-        os.environ["MASTER_ADDR"] = nodelist.split(",")[0] if nodelist else "localhost"
-    if "MASTER_PORT" not in os.environ:
-        os.environ["MASTER_PORT"] = "29500"
+    # Since each process sees only one GPU, we always use cuda:0
+    torch.cuda.set_device(0)
+    device = torch.device("cuda:0")
 
-    dist.init_process_group("nccl", rank=rank, world_size=world_size)
-    torch.cuda.set_device(local_rank)
-    return rank, world_size
+    dist.init_process_group(
+        backend="nccl",
+        rank=rank,
+        world_size=world_size
+    )
+
+    print(f"[Rank {rank}] Initialized on device {device}")
+    return device, 0, rank, world_size
 
 def parse_args():
     p = argparse.ArgumentParser()
@@ -75,9 +89,10 @@ def is_main(rank) -> bool:
     return rank == 0
 
 def main():
+    print(f"[Rank {os.environ.get('SLURM_PROCID', '?')}] Available devices: {torch.cuda.device_count()}")
     args = parse_args()
-    rank, world_size = setup_ddp()
-    device = torch.device("cuda", int(os.environ["LOCAL_RANK"]))
+    device, local_rank, rank, world_size = setup_ddp()
+    print(f"[Rank {os.environ.get('SLURM_PROCID')}] Visible CUDA devices: {torch.cuda.device_count()}")
 
     #### model init ####
     model_kwargs = {
@@ -90,10 +105,8 @@ def main():
         'output_activation': None
     }
     unet = BuildUNet.UNet(**model_kwargs).to(device)
-    model = torch.nn.parallel.DistributedDataParallel(
-        unet,
-        device_ids=[device]
-    ) 
+    model = torch.nn.parallel.DistributedDataParallel(unet,
+                                                      device_ids=[0]) 
 
     #### Data Loading ####
     # define options
@@ -110,7 +123,9 @@ def main():
     pennycress_masks = []
     n_pad = 128   # padding for images
 
-    for img_name in tqdm(mask_names):
+    if is_main(rank):
+        print(f'loading {len(img_names)} images and masks from {img_path} and {mask_path}')
+    for img_name in mask_names:
         # load image
         image = np.array(Image.open(img_path + img_name))
         image = (image[:, :, :3] / 255.0) # normalize image
@@ -132,11 +147,13 @@ def main():
     multiclass_masks = []
 
     # add additional channel to pennycress masks for one-hot encoding
-    for mask in tqdm(pennycress_masks):
+    for mask in pennycress_masks:
         bg = mask.sum(-1) == 0 # booleanize background
         mask = np.concatenate([bg.reshape(*bg.shape, 1), mask], axis=-1) # add background channel
         multiclass_masks.append(mask)
-
+    if is_main(rank):
+        print(f'loaded {len(pennycress_images)} images and masks')
+        print(f'Creating data generators...')
     #### Data Generation ####
     # options
     images = pennycress_images
@@ -174,7 +191,9 @@ def main():
     # init ddp samplers
     train_sampler = DistributedSampler(train_generator, shuffle=True)
     val_sampler = DistributedSampler(val_generator, shuffle=False)
-
+    if is_main(rank):
+        print(f'created train and val generators.') 
+        print(f'Starting training...')
     #### Train Model ####
     # define our loss function, optimizer
     reload(WeightedCrossEntropy)
@@ -235,66 +254,67 @@ def main():
             sampler=val_sampler)
 
         # estimate loss
-        model.eval()
-        with torch.no_grad():
-            train_loss, val_loss = 0, 0
-            with tqdm(total=batches_per_eval, desc=' Eval') as pbar:
-                for (xbt, ybt), (xbv, ybv) in zip(train_loader, val_loader):
-                    xbt, ybt = xbt.to(device), ybt.to(device)
-                    xbv, ybv = xbv.to(device), ybv.to(device)
-                    train_loss += loss_function(model(xbt), ybt).item()
-                    val_loss += loss_function(model(xbv), ybv).item()
-                    pbar.update(1)
-                    if pbar.n == pbar.total:
-                        break
-            train_loss /= batches_per_eval
-            val_loss /= batches_per_eval
-        model.train()
-
-        # wandb logging
         if is_main(rank):
-            wandb.log({
-                "train_loss": train_loss,
-                "val_loss": val_loss,
-                "iter_num": iter_num
-            })
+            model.eval()
+            with torch.no_grad():
+                train_loss, val_loss = 0, 0
+                with tqdm(total=batches_per_eval, desc=' Eval', disable=not is_main(rank)) as pbar:
+                    for (xbt, ybt), (xbv, ybv) in zip(train_loader, val_loader):
+                        xbt, ybt = xbt.to(device), ybt.to(device)
+                        xbv, ybv = xbv.to(device), ybv.to(device)
+                        train_loss += loss_function(model(xbt), ybt).item()
+                        val_loss += loss_function(model(xbv), ybv).item()
+                        pbar.update(1)  
+                        if pbar.n == pbar.total:
+                            break
+                train_loss /= batches_per_eval
+                val_loss /= batches_per_eval
+            model.train()
 
-        # checkpoint model
-        if iter_num > 0:
-            checkpoint = {
-                'model': model.state_dict(),
-                'optimizer': optimizer.state_dict(),
-                'kwargs': model_kwargs,
-                'iter_num': iter_num,
-                'best_val_loss': best_val_loss,
-                'train_ids': train_idx,
-                'val_ids': val_idx,
-            }
-            torch.save(checkpoint, chckpnt_path.format(iter_num))
+            # wandb logging
+            if is_main(rank):
+                wandb.log({
+                    "train_loss": train_loss,
+                    "val_loss": val_loss,
+                    "iter_num": iter_num
+                })
 
-        # book keeping
-        if best_val_loss is None:
-            best_val_loss = val_loss
+            # checkpoint model
+            if iter_num > 0:
+                checkpoint = {
+                    'model': model.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                    'kwargs': model_kwargs,
+                    'iter_num': iter_num,
+                    'best_val_loss': best_val_loss,
+                    'train_ids': train_idx,
+                    'val_ids': val_idx,
+                }
+                torch.save(checkpoint, chckpnt_path.format(iter_num))
 
-        if iter_num > 0:
-            if val_loss < best_val_loss:
+            # book keeping
+            if best_val_loss is None:
                 best_val_loss = val_loss
-                last_improved = 0
-                print(f'*** validation loss improved: {best_val_loss:.4e} ***')
-            else:
-                last_improved += 1
-                print(f'validation has not improved in {last_improved} steps')
-            if last_improved > early_stop:
-                print()
-                print(f'*** no improvement for {early_stop} steps, stopping ***')
-                break
 
+            if iter_num > 0:
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    last_improved = 0
+                    print(f'*** validation loss improved: {best_val_loss:.4e} ***')
+                else:
+                    last_improved += 1
+                    print(f'validation has not improved in {last_improved} steps')
+                if last_improved > early_stop:
+                    print()
+                    print(f'*** no improvement for {early_stop} steps, stopping ***')
+                    break
+        
         # --------
         # backprop
         # --------
 
         # iterate over batches
-        with tqdm(total=eval_interval, desc='Train') as pbar:
+        with tqdm(total=eval_interval, desc='Train', disable=not is_main(rank)) as pbar:
             for xb, yb in train_loader:
 
                 # update the model
