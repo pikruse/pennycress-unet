@@ -50,27 +50,16 @@ def extract_master_addr():
 def setup_ddp():
     rank = int(os.environ["SLURM_PROCID"])
     world_size = int(os.environ["SLURM_NTASKS"])
+    local_rank = int(os.environ.get("SLURM_LOCALID", 0))
 
-    os.environ.setdefault("MASTER_PORT", "6000")
-    os.environ.setdefault("MASTER_ADDR", subprocess.check_output(
-        ["scontrol", "show", "hostname", os.environ["SLURM_NODELIST"]]
-    ).decode().splitlines()[0])
-
-    os.environ["RANK"] = str(rank)
-    os.environ["WORLD_SIZE"] = str(world_size)
-
-    # Since each process sees only one GPU, we always use cuda:0
     torch.cuda.set_device(0)
-    device = torch.device("cuda:0")
-
     dist.init_process_group(
         backend="nccl",
         rank=rank,
         world_size=world_size
     )
-
-    print(f"[Rank {rank}] Initialized on device {device}")
-    return device, 0, rank, world_size
+    
+    return torch.device("cuda:0"), local_rank, rank, world_size
 
 def parse_args():
     p = argparse.ArgumentParser()

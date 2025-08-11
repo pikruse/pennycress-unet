@@ -1,29 +1,29 @@
-[W803 07:24:25.144249676 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
-[W803 07:24:25.144251168 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
-[W803 07:24:25.144264103 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
-[W803 07:24:25.144273712 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
-[W803 07:24:25.144265837 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
-[W803 07:24:25.144242512 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
-[W803 07:24:25.144260176 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
-[W803 07:24:25.144259625 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
-[W803 07:24:25.951079679 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
-[W803 07:24:25.951085290 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
-[W803 07:24:25.951178119 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
-[W803 07:24:25.951182728 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
-[W803 07:24:25.951212636 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
-[W803 07:24:25.952074672 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
-[W803 07:24:25.952291210 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
-[W803 07:24:25.161914010 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
+[W803 07:28:57.606761246 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
+[W803 07:28:57.606785193 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
+[W803 07:28:57.606770144 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
+[W803 07:28:57.606755926 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
+[W803 07:28:57.606772278 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
+[W803 07:28:57.608172965 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
+[W803 07:28:57.608286695 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
+[W803 07:28:57.924694639 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
+[W803 07:28:57.924703115 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
+[W803 07:28:57.924723695 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
+[W803 07:28:57.924713515 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
+[W803 07:28:57.924732732 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
+[W803 07:28:57.924715028 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
+[W803 07:28:57.924732051 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
+[W803 07:28:57.924730859 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
+[W803 07:28:57.809243842 socket.cpp:755] [c10d] The client socket cannot be initialized to connect to [frontier10340.frontier.olcf.ornl.gov]:6000 (errno: 97 - Address family not supported by protocol).
 wandb: Currently logged in as: pikruse (jail-ai) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
 wandb: Tracking run with wandb version 0.21.0
-wandb: Run data is saved locally in /lustre/orion/syb111/proj-shared/Personal/krusepi/projects/phenotyping/pennycress-unet/wandb/run-20250803_072450-keiabm61
+wandb: Run data is saved locally in /lustre/orion/syb111/proj-shared/Personal/krusepi/projects/phenotyping/pennycress-unet/wandb/run-20250803_072920-4n3spwc1
 wandb: Run `wandb offline` to turn off syncing.
-wandb: Syncing run clean-surf-12
+wandb: Syncing run worldly-shadow-13
 wandb: ⭐️ View project at https://wandb.ai/jail-ai/pennycress-unet
-wandb: 🚀 View run at https://wandb.ai/jail-ai/pennycress-unet/runs/keiabm61
-srun: error: frontier10341: tasks 10,12: Aborted (core dumped)
-srun: Terminating StepId=3636333.0
- Eval:   0%|          | 0/1000 [00:00<?, ?it/s]slurmstepd: error: *** STEP 3636333.0 ON frontier10340 CANCELLED AT 2025-08-03T07:26:00 ***
-srun: error: frontier10341: tasks 8-9,11,13-15: Terminated
+wandb: 🚀 View run at https://wandb.ai/jail-ai/pennycress-unet/runs/4n3spwc1
+srun: error: frontier10341: task 10: Aborted (core dumped)
+srun: Terminating StepId=3636336.0
+ Eval:   0%|          | 0/1000 [00:00<?, ?it/s]slurmstepd: error: *** STEP 3636336.0 ON frontier10340 CANCELLED AT 2025-08-03T07:30:12 ***
+srun: error: frontier10341: tasks 8-9,11-15: Terminated
 srun: error: frontier10340: tasks 0-7: Terminated
-srun: Force Terminated StepId=3636333.0
+srun: Force Terminated StepId=3636336.0
