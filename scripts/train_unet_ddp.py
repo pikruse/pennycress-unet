@@ -83,6 +83,11 @@ def main():
     device, local_rank, rank, world_size = setup_ddp()
     print(f"[Rank {os.environ.get('SLURM_PROCID')}] Visible CUDA devices: {torch.cuda.device_count()}")
 
+    # checkpoint setup
+    CHECKPOINT_DIR = Path("checkpoints")
+    if rank == 0:
+        CHECKPOINT_DIR.mkdir(exist_ok=True, parents=True)
+
     #### model init ####
     model_kwargs = {
         'layer_sizes': [32, 64, 128, 256, 512],
@@ -194,7 +199,7 @@ def main():
     optimizer = torch.optim.Adam(unet.parameters(), lr=0.001)
 
     # log options
-    chckpnt_path = 'checkpoints/checkpoint_{0}_up.pt'
+    chckpnt_path = CHECKPOINT_DIR / "checkpoint_{:06d}.pt" 
 
     # lr options
     warmup_iters = 1000
@@ -269,7 +274,7 @@ def main():
                 })
 
             # checkpoint model
-            if iter_num > 0:
+            if rank == 0 and iter_num > 0:
                 checkpoint = {
                     'model': model.state_dict(),
                     'optimizer': optimizer.state_dict(),

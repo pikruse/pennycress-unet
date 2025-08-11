@@ -10,6 +10,7 @@
 #SBATCH -e logs/%x.err # Err Path
 #SBATCH --open-mode=truncate # Overwrite .out/.err
 
+### settings, environment, and module loads ###
 set -eo pipefail
 
 module purge
@@ -20,29 +21,30 @@ module load craype-accel-amd-gfx90a
 source /lustre/orion/syb111/proj-shared/Environments/source_miniconda_frontier.sh
 source activate /lustre/orion/syb111/world-shared/environments/pytorch-cv/
 
+### wandb settings ### 
 export https_proxy=http://proxy.ccs.ornl.gov:3128
 export http_proxy=$https_proxy
 export WANDB_HTTP_TIMEOUT=90
 
-# miopen settings (needed for AMD GPUs)
-export PYTORCH_ROCM_ARCH=gfx90a
-export MIOPEN_FIND_MODE="NORMAL"
-export MIOPEN_FIND_MODE=NORMAL
-export MIOPEN_DEBUG_CONV_DIRECT=1
-export MIOPEN_DEBUG_CONV_WINOGRAD=0
-export MIOPEN_DISABLE_CACHE=1 # this is needed, otherwise conv2d errors out
-
-# NCCL settings
-export HSA_FORCE_FINE_GRAIN_PCIE=1
-export NCCL_SOCKET_IFNAME=hsn0 
-export TORCH_NCCL_ASYNC_ERROR_HANDLING=0
-
-# DDP settings
+### network / rccl settings ###
 export MASTER_ADDR=$(hostname -i)
 export MASTER_PORT=6000
+export NCCL_SOCKET_IFNAME=hsn0
+export FI_MR_CACHE_MONITOR=kdreg2
+export FI_CXI_DEFAULT_CQ_SIZE=131072
+export FI_CXI_DEFAULT_TX_SIZE=2048
+export FI_CXI_RX_MATCH_MODE=hybrid
+export NCCL_NET_GDR_LEVEL=3
+export NCCL_CROSS_NIC=1
 
-srun -N 2 --ntasks=16 --ntasks-per-node=8 --gpus-per-task=1 \
+### miopen settings ###
+export MIOPEN_USER_DB_PATH=/tmp/miopen-$SLURM_JOB_ID
+export MIOPEN_CUSTOM_CACHE_DIR=$MIOPEN_USER_DB_PATH
+rm -rf "$MIOPEN_USER_DB_PATH" && mkdir -p "$MIOPEN_USER_DB_PATH"
+export MIOPEN_FIND_MODE=NORMAL
+
+srun -N2 -n16 --gpus-per-task=1 \
     --cpu-bind=cores \
     --export=ALL \
     --kill-on-bad-exit=1 \
-    python -u scripts/train_unet_ddp.py --batch_size 32 --num_iters 100_000    
+    python -u scripts/train_unet_ddp.py --batch_size 16 --num_iters 100_000    
