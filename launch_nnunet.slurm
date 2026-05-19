@@ -2,8 +2,9 @@
 #SBATCH -A SYB114
 #SBATCH -J pennycress-nnunet
 #SBATCH -N 1
-#SBATCH -t 2:00:00
+#SBATCH -t 00:10:00
 #SBATCH -p batch
+#SBATCH -q debug
 #SBATCH -C nvme
 #SBATCH -o logs/%x.out
 #SBATCH -e logs/%x.err

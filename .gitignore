@@ -5,3 +5,4 @@
 **/nnu_net
 **/wandb
 .env
+logs/*
