@@ -2,7 +2,7 @@
 #SBATCH -A SYB114
 #SBATCH -J pennycress-nnunet
 #SBATCH -N 1
-#SBATCH -t 00:10:00
+#SBATCH -t 2:00:00
 #SBATCH -p batch
 #SBATCH -q debug
 #SBATCH -C nvme
@@ -25,6 +25,7 @@ source activate /lustre/orion/syb111/world-shared/environments/pytorch-rocm/
 export https_proxy=http://proxy.ccs.ornl.gov:3128
 export http_proxy=$https_proxy
 export WANDB_HTTP_TIMEOUT=${WANDB_HTTP_TIMEOUT:-90}
+export WANDB_ENTITY=${WANDB_ENTITY:-jail-ai}
 export MASTER_ADDR=$(hostname -i)
 export MASTER_PORT=${MASTER_PORT:-6000}
 export NCCL_SOCKET_IFNAME=hsn0
@@ -36,30 +37,56 @@ export NCCL_NET_GDR_LEVEL=3
 export NCCL_CROSS_NIC=1
 
 ### miopen settings ###
-export MIOPEN_USER_DB_PATH=/tmp/miopen-$SLURM_JOB_ID
-export MIOPEN_CUSTOM_CACHE_DIR=$MIOPEN_USER_DB_PATH
-rm -rf "$MIOPEN_USER_DB_PATH" && mkdir -p "$MIOPEN_USER_DB_PATH"
-export MIOPEN_FIND_MODE=NORMAL
+export MIOPEN_CACHE_DIR="${MIOPEN_CACHE_DIR:-${PWD}/nnu_net/cache/miopen}"
+export MIOPEN_USER_DB_PATH="${MIOPEN_USER_DB_PATH:-$MIOPEN_CACHE_DIR}"
+export MIOPEN_CUSTOM_CACHE_DIR="${MIOPEN_CUSTOM_CACHE_DIR:-$MIOPEN_CACHE_DIR}"
+mkdir -p "$MIOPEN_USER_DB_PATH" "$MIOPEN_CUSTOM_CACHE_DIR"
+export MIOPEN_FIND_MODE=${MIOPEN_FIND_MODE:-NORMAL}
+
+### compiler / kernel cache settings ###
+export NNUNET_CACHE_DIR="${PWD}/nnu_net/cache/${SLURM_JOB_ID:-manual}"
+export TRITON_CACHE_DIR="${NNUNET_CACHE_DIR}/triton"
+export TORCHINDUCTOR_CACHE_DIR="${NNUNET_CACHE_DIR}/torchinductor"
+export TORCH_EXTENSIONS_DIR="${NNUNET_CACHE_DIR}/torch_extensions"
+export XDG_CACHE_HOME="${NNUNET_CACHE_DIR}/xdg"
+mkdir -p "$TRITON_CACHE_DIR" "$TORCHINDUCTOR_CACHE_DIR" "$TORCH_EXTENSIONS_DIR" "$XDG_CACHE_HOME"
+
+CLEAN_NNUNET_COMPILE_CACHE=${CLEAN_NNUNET_COMPILE_CACHE:-1}
+cleanup_compile_cache() {
+    if [[ "$CLEAN_NNUNET_COMPILE_CACHE" == "1" ]]; then
+        rm -rf "$NNUNET_CACHE_DIR"
+    fi
+}
+trap cleanup_compile_cache EXIT
 
 ### nnU-Net settings ###
 export nnUNet_raw="${PWD}/nnu_net/nnUNet_raw"
 export nnUNet_preprocessed="${PWD}/nnu_net/nnUNet_preprocessed"
 export nnUNet_results="${PWD}/nnu_net/nnUNet_results"
 export nnUNet_n_proc_DA=${nnUNet_n_proc_DA:-12}
+export nnUNet_compile=${nnUNet_compile:-1}
 
 ### wandb settings ###
-export nnUNet_wandb_enabled=${nnUNet_wandb_enabled:-1}
-export nnUNet_wandb_project=${nnUNet_wandb_project:-pennycress-nnunet}
+# nnU-Net 2.7.0 initializes its W&B logger in every spawned DDP worker.
+# With multi-GPU training those workers can race while deleting fold_*/wandb.
+export nnUNet_wandb_enabled=${nnUNet_wandb_enabled:-0}
+export nnUNet_wandb_entity=${nnUNet_wandb_entity:-$WANDB_ENTITY}
+export nnUNet_wandb_project=${nnUNet_wandb_project:-pennycress-unet}
 export nnUNet_wandb_mode=${nnUNet_wandb_mode:-online}
 
 DATASET_ID=${DATASET_ID:-501}
 DATASET_NAME=${DATASET_NAME:-PennycressPods}
 CONFIGURATION=${CONFIGURATION:-2d}
 FOLD=${FOLD:-0}
-NUM_GPUS=${NUM_GPUS:-1}
+NUM_GPUS=${NUM_GPUS:-8}
 NNUNET_EXTRA_ARGS=${NNUNET_EXTRA_ARGS:---npz}
 RUN_EXTERNAL_TEST=${RUN_EXTERNAL_TEST:-1}
-LOG_EXTERNAL_TEST_TO_WANDB=${LOG_EXTERNAL_TEST_TO_WANDB:-$nnUNet_wandb_enabled}
+LOG_EXTERNAL_TEST_TO_WANDB=${LOG_EXTERNAL_TEST_TO_WANDB:-1}
+PREPARE_NNUNET_DATASET=${PREPARE_NNUNET_DATASET:-1}
+PREPROCESS_NNUNET_DATASET=${PREPROCESS_NNUNET_DATASET:-auto}
+export WANDB_NAME=${WANDB_NAME:-nnunet-${DATASET_NAME}-${CONFIGURATION}-fold-${FOLD}}
+DATASET_DIR="${nnUNet_raw}/Dataset$(printf "%03d" "$DATASET_ID")_${DATASET_NAME}"
+PREPROCESSED_DATASET_DIR="${nnUNet_preprocessed}/Dataset$(printf "%03d" "$DATASET_ID")_${DATASET_NAME}"
 
 if [[ -z "${PREDICT_CHECKPOINT:-}" ]]; then
     if [[ "$FOLD" == "all" ]]; then
@@ -79,12 +106,24 @@ if ! command -v nnUNetv2_plan_and_preprocess >/dev/null 2>&1; then
     exit 1
 fi
 
-python -u scripts/prepare_nnunet_dataset.py \
-    --dataset-id "$DATASET_ID" \
-    --dataset-name "$DATASET_NAME" \
-    --overwrite
+if [[ "$PREPARE_NNUNET_DATASET" == "1" ]]; then
+    python -u scripts/prepare_nnunet_dataset.py \
+        --dataset-id "$DATASET_ID" \
+        --dataset-name "$DATASET_NAME" \
+        --overwrite
+fi
 
-nnUNetv2_plan_and_preprocess -d "$DATASET_ID" --verify_dataset_integrity
+if [[ "$PREPROCESS_NNUNET_DATASET" == "1" ]] || \
+   [[ "$PREPROCESS_NNUNET_DATASET" == "auto" && ! -f "${PREPROCESSED_DATASET_DIR}/nnUNetPlans.json" ]]; then
+    nnUNetv2_plan_and_preprocess -d "$DATASET_ID" --verify_dataset_integrity
+else
+    echo "Skipping nnU-Net plan/preprocess for ${DATASET_DIR}"
+    echo "Set PREPROCESS_NNUNET_DATASET=1 to force regeneration."
+fi
+
+if [[ "$nnUNet_wandb_enabled" != "1" ]]; then
+    rm -rf "${nnUNet_results}/Dataset$(printf "%03d" "$DATASET_ID")_${DATASET_NAME}/nnUNetTrainer__nnUNetPlans__${CONFIGURATION}/fold_${FOLD}/wandb"
+fi
 
 srun -N 1 \
     -n 1 \
@@ -95,7 +134,6 @@ srun -N 1 \
     nnUNetv2_train "$DATASET_ID" "$CONFIGURATION" "$FOLD" "${EXTRA_ARGS[@]}" -num_gpus "$NUM_GPUS"
 
 if [[ "$RUN_EXTERNAL_TEST" == "1" ]]; then
-    DATASET_DIR="${nnUNet_raw}/Dataset$(printf "%03d" "$DATASET_ID")_${DATASET_NAME}"
     PREDICTION_DIR="${PWD}/nnu_net/predictions/Dataset$(printf "%03d" "$DATASET_ID")_${DATASET_NAME}/${CONFIGURATION}/fold_${FOLD}/${PREDICT_CHECKPOINT%.pth}"
     METRICS_DIR="${PWD}/nnu_net/metrics/Dataset$(printf "%03d" "$DATASET_ID")_${DATASET_NAME}/${CONFIGURATION}/fold_${FOLD}/${PREDICT_CHECKPOINT%.pth}"
     RGB_PREDICTION_DIR="${PWD}/nnu_net/predictions_rgb/Dataset$(printf "%03d" "$DATASET_ID")_${DATASET_NAME}/${CONFIGURATION}/fold_${FOLD}/${PREDICT_CHECKPOINT%.pth}"
@@ -122,9 +160,10 @@ if [[ "$RUN_EXTERNAL_TEST" == "1" ]]; then
     if [[ "$LOG_EXTERNAL_TEST_TO_WANDB" == "1" ]]; then
         EVAL_ARGS+=(
             --wandb
+            --wandb-entity "$nnUNet_wandb_entity"
             --wandb-project "$nnUNet_wandb_project"
             --wandb-mode "$nnUNet_wandb_mode"
-            --wandb-run-name "external-test-${DATASET_ID}-${CONFIGURATION}-fold-${FOLD}-${PREDICT_CHECKPOINT%.pth}"
+            --wandb-run-name "nnunet-external-test-${DATASET_ID}-${CONFIGURATION}-fold-${FOLD}-${PREDICT_CHECKPOINT%.pth}"
             --wandb-group "${SLURM_JOB_ID:-manual}"
         )
     fi

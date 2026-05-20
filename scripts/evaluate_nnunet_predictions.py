@@ -45,7 +45,8 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Log summary metrics to Weights & Biases.",
     )
-    parser.add_argument("--wandb-project", default="pennycress-nnunet")
+    parser.add_argument("--wandb-entity", default=os.getenv("WANDB_ENTITY", "jail-ai"))
+    parser.add_argument("--wandb-project", default="pennycress-unet")
     parser.add_argument("--wandb-mode", default="online")
     parser.add_argument("--wandb-run-name", default=None)
     parser.add_argument("--wandb-group", default=None)
@@ -169,6 +170,7 @@ def log_to_wandb(args: argparse.Namespace, summary: dict[str, float | int]) -> N
     import wandb
 
     run = wandb.init(
+        entity=args.wandb_entity,
         project=args.wandb_project,
         mode=args.wandb_mode,
         name=args.wandb_run_name,
