@@ -6,8 +6,8 @@
 #SBATCH -p batch
 #SBATCH -q debug
 #SBATCH -C nvme
-#SBATCH -o logs/%x.out
-#SBATCH -e logs/%x.err
+#SBATCH -o logs/%x-%j.out
+#SBATCH -e logs/%x-%j.err
 #SBATCH --open-mode=truncate
 
 set -eo pipefail
@@ -41,7 +41,8 @@ export MIOPEN_CACHE_DIR="${MIOPEN_CACHE_DIR:-${PWD}/nnu_net/cache/miopen}"
 export MIOPEN_USER_DB_PATH="${MIOPEN_USER_DB_PATH:-$MIOPEN_CACHE_DIR}"
 export MIOPEN_CUSTOM_CACHE_DIR="${MIOPEN_CUSTOM_CACHE_DIR:-$MIOPEN_CACHE_DIR}"
 mkdir -p "$MIOPEN_USER_DB_PATH" "$MIOPEN_CUSTOM_CACHE_DIR"
-export MIOPEN_FIND_MODE=${MIOPEN_FIND_MODE:-NORMAL}
+export MIOPEN_FIND_MODE=${MIOPEN_FIND_MODE:-FAST}
+export MIOPEN_FIND_ENFORCE=${MIOPEN_FIND_ENFORCE:-NONE}
 
 ### compiler / kernel cache settings ###
 export NNUNET_CACHE_DIR="${PWD}/nnu_net/cache/${SLURM_JOB_ID:-manual}"
@@ -64,7 +65,9 @@ export nnUNet_raw="${PWD}/nnu_net/nnUNet_raw"
 export nnUNet_preprocessed="${PWD}/nnu_net/nnUNet_preprocessed"
 export nnUNet_results="${PWD}/nnu_net/nnUNet_results"
 export nnUNet_n_proc_DA=${nnUNet_n_proc_DA:-12}
-export nnUNet_compile=${nnUNet_compile:-1}
+export nnUNet_compile=${nnUNet_compile:-0}
+export NNUNET_CUDNN_BENCHMARK=${NNUNET_CUDNN_BENCHMARK:-0}
+PATCH_NNUNET_CUDNN_BENCHMARK=${PATCH_NNUNET_CUDNN_BENCHMARK:-1}
 
 ### wandb settings ###
 # nnU-Net 2.7.0 initializes its W&B logger in every spawned DDP worker.
@@ -88,6 +91,14 @@ export WANDB_NAME=${WANDB_NAME:-nnunet-${DATASET_NAME}-${CONFIGURATION}-fold-${F
 DATASET_DIR="${nnUNet_raw}/Dataset$(printf "%03d" "$DATASET_ID")_${DATASET_NAME}"
 PREPROCESSED_DATASET_DIR="${nnUNet_preprocessed}/Dataset$(printf "%03d" "$DATASET_ID")_${DATASET_NAME}"
 
+echo "NUM_GPUS=$NUM_GPUS"
+echo "nnUNet_compile=$nnUNet_compile"
+echo "MIOPEN_FIND_MODE=$MIOPEN_FIND_MODE"
+echo "MIOPEN_FIND_ENFORCE=$MIOPEN_FIND_ENFORCE"
+echo "MIOPEN_USER_DB_PATH=$MIOPEN_USER_DB_PATH"
+echo "NNUNET_CUDNN_BENCHMARK=$NNUNET_CUDNN_BENCHMARK"
+echo "PATCH_NNUNET_CUDNN_BENCHMARK=$PATCH_NNUNET_CUDNN_BENCHMARK"
+
 if [[ -z "${PREDICT_CHECKPOINT:-}" ]]; then
     if [[ "$FOLD" == "all" ]]; then
         PREDICT_CHECKPOINT=checkpoint_final.pth
@@ -104,6 +115,10 @@ if ! command -v nnUNetv2_plan_and_preprocess >/dev/null 2>&1; then
     echo "nnUNetv2_plan_and_preprocess was not found. Install nnU-Net v2 in this environment first:"
     echo "  pip install nnunetv2"
     exit 1
+fi
+
+if [[ "$PATCH_NNUNET_CUDNN_BENCHMARK" == "1" ]]; then
+    python -u scripts/patch_nnunet_cudnn_benchmark.py
 fi
 
 if [[ "$PREPARE_NNUNET_DATASET" == "1" ]]; then
