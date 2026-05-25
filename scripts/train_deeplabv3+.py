@@ -66,7 +66,11 @@ def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--batch_size", type=int, default=4)
     p.add_argument("--lr", type=float, default=1e-6)
-    p.add_argument("--num_iters", type=int, default=50_000)
+    p.add_argument("--num_iters", type=int, default=150_000)
+    p.add_argument("--eval_interval", type=int, default=1000)
+    p.add_argument("--batches_per_eval", type=int, default=1000)
+    p.add_argument("--log_interval", type=int, default=10)
+    p.add_argument("--num_workers", type=int, default=0)
     p.add_argument("--seed", type=int, default=1)
     return p.parse_args()
 
@@ -105,6 +109,31 @@ def reduce_scalar_mean(value, device):
     dist.all_reduce(value, op=dist.ReduceOp.SUM)
     value /= dist.get_world_size()
     return value.item()
+
+def make_loader(dataset, batch_size, sampler, num_workers):
+    loader_kwargs = {
+        "batch_size": batch_size,
+        "pin_memory": True,
+        "sampler": sampler,
+        "num_workers": num_workers,
+    }
+    if num_workers > 0:
+        loader_kwargs["prefetch_factor"] = 2
+        loader_kwargs["persistent_workers"] = True
+    return DataLoader(dataset, **loader_kwargs)
+
+def save_checkpoint(checkpoint_dir, model, optimizer, model_kwargs, iter_num, best_val_loss, train_idx, val_idx):
+    checkpoint = {
+        'model': model.module.state_dict(),
+        'optimizer': optimizer.state_dict(),
+        'kwargs': model_kwargs,
+        'iter_num': iter_num,
+        'best_val_loss': best_val_loss,
+        'train_ids': train_idx,
+        'val_ids': val_idx,
+    }
+    checkpoint_path = checkpoint_dir / f"checkpoint_{iter_num:06d}.pt"
+    torch.save(checkpoint, checkpoint_path)
 
 def main():
     print(f"[Rank {os.environ.get('SLURM_PROCID', '?')}] Available devices: {torch.cuda.device_count()}")
@@ -213,6 +242,10 @@ def main():
     if is_main(rank):
         print(f'created train and val generators.') 
         print(f'Starting training...')
+
+    train_loader = make_loader(train_generator, args.batch_size, train_sampler, args.num_workers)
+    val_loader = make_loader(val_generator, args.batch_size, val_sampler, args.num_workers)
+
     #### Train Model ####
     # define our loss function, optimizer
     reload(WeightedCrossEntropy)
@@ -223,17 +256,14 @@ def main():
         
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-    # log options
-    chckpnt_path = CHECKPOINT_DIR / "checkpoint_{:06d}.pt" 
-
     # lr options
     warmup_iters = 1000
     lr_decay_iters = 90000
     max_lr = 1e-3
     min_lr = 1e-5
-    max_iters = 150000
-    batches_per_eval = 1000
-    eval_interval = 1000
+    max_iters = args.num_iters
+    batches_per_eval = args.batches_per_eval
+    eval_interval = args.eval_interval
     early_stop = 50
 
    # non-customizable options
@@ -258,35 +288,23 @@ def main():
         # set epoch for sampler
         train_sampler.set_epoch(iter_num)
 
-        # shuffle dataloaders
-        train_loader = DataLoader(
-            train_generator, 
-            batch_size=args.batch_size,
-            pin_memory=True,
-            sampler=train_sampler
-        )
-
-        val_loader = DataLoader(
-            val_generator, 
-            batch_size=args.batch_size,
-            pin_memory=True,
-            sampler=val_sampler)
-
         # estimate loss. All ranks must participate because this is a DDP model.
         model.eval()
         with torch.no_grad():
             train_loss_sum, val_loss_sum = 0.0, 0.0
             train_count, val_count = 0, 0
+            eval_batches = 0
             with tqdm(total=batches_per_eval, desc=' Eval', disable=not is_main(rank)) as pbar:
                 for (xbt, ybt), (xbv, ybv) in zip(train_loader, val_loader):
-                    xbt, ybt = xbt.to(device), ybt.to(device)
-                    xbv, ybv = xbv.to(device), ybv.to(device)
+                    xbt, ybt = xbt.to(device, non_blocking=True), ybt.to(device, non_blocking=True)
+                    xbv, ybv = xbv.to(device, non_blocking=True), ybv.to(device, non_blocking=True)
                     train_loss_sum += loss_function(model(xbt), ybt).item()
                     val_loss_sum += loss_function(model(xbv), ybv).item()
                     train_count += 1
                     val_count += 1
-                    pbar.update(1)  
-                    if pbar.n == pbar.total:
+                    eval_batches += 1
+                    pbar.update(1)
+                    if eval_batches >= batches_per_eval:
                         break
             train_loss, val_loss = reduce_eval_losses(
                 train_loss_sum,
@@ -307,16 +325,16 @@ def main():
 
         # checkpoint model
         if rank == 0 and iter_num > 0:
-            checkpoint = {
-                'model': model.module.state_dict(),
-                'optimizer': optimizer.state_dict(),
-                'kwargs': model_kwargs,
-                'iter_num': iter_num,
-                'best_val_loss': best_val_loss,
-                'train_ids': train_idx,
-                'val_ids': val_idx,
-            }
-            torch.save(checkpoint, chckpnt_path.format(iter_num))
+            save_checkpoint(
+                CHECKPOINT_DIR,
+                model,
+                optimizer,
+                model_kwargs,
+                iter_num,
+                best_val_loss,
+                train_idx,
+                val_idx,
+            )
 
         # book keeping
         if best_val_loss is None:
@@ -348,11 +366,12 @@ def main():
 
         # iterate over batches
         hit_nan = False
+        train_batches = 0
         with tqdm(total=eval_interval, desc='Train', disable=not is_main(rank)) as pbar:
             for xb, yb in train_loader:
 
                 # update the model
-                xb, yb = xb.to(device), yb.to(device)
+                xb, yb = xb.to(device, non_blocking=True), yb.to(device, non_blocking=True)
 
                 loss = loss_function(model(xb), yb)
 
@@ -380,8 +399,11 @@ def main():
                 optimizer.zero_grad(set_to_none=True)
 
                 # update wandb
-                reduced_loss = reduce_scalar_mean(loss, device)
-                if is_main(rank):
+                if iter_num % args.log_interval == 0 or iter_num + 1 >= max_iters:
+                    reduced_loss = reduce_scalar_mean(loss, device)
+                else:
+                    reduced_loss = None
+                if is_main(rank) and reduced_loss is not None:
                     wandb.log({
                         "train_loss": reduced_loss,
                         "lr": lr,
@@ -390,16 +412,28 @@ def main():
 
                 # update book keeping
                 pbar.update(1)
+                train_batches += 1
                 iter_num += 1
-                if pbar.n == pbar.total:
+                if train_batches >= eval_interval or iter_num >= max_iters:
                     break
 
         if hit_nan:
             break
 
         # break once hitting max_iters
-        if iter_num > max_iters:
-            print(f'maximum iterations reached: {max_iters}')
+        if iter_num >= max_iters:
+            if rank == 0:
+                save_checkpoint(
+                    CHECKPOINT_DIR,
+                    model,
+                    optimizer,
+                    model_kwargs,
+                    iter_num,
+                    best_val_loss,
+                    train_idx,
+                    val_idx,
+                )
+                print(f'maximum iterations reached: {max_iters}')
             break
         pbar.close()
     cleanup_ddp()

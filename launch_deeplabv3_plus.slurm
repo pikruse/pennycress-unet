@@ -2,9 +2,8 @@
 #SBATCH -A SYB114
 #SBATCH -J deeplabv3+ 
 #SBATCH -N 1 
-#SBATCH -t 2:00:00
+#SBATCH -t 24:00:00
 #SBATCH -p batch
-#SBATCH -q debug
 #SBATCH -C nvme
 #SBATCH -o logs/%x-%j.out # Out Path
 #SBATCH -e logs/%x-%j.err # Err Path
@@ -68,10 +67,11 @@ export NCCL_NET_GDR_LEVEL=3
 export NCCL_CROSS_NIC=1
 
 ### miopen settings ###
-export MIOPEN_USER_DB_PATH=/tmp/miopen-$SLURM_JOB_ID
+export MIOPEN_USER_DB_PATH="${PWD}/nnu_net/cache/miopen"
 export MIOPEN_CUSTOM_CACHE_DIR=$MIOPEN_USER_DB_PATH
-rm -rf "$MIOPEN_USER_DB_PATH" && mkdir -p "$MIOPEN_USER_DB_PATH"
-export MIOPEN_FIND_MODE=NORMAL
+mkdir -p "$MIOPEN_USER_DB_PATH"
+export MIOPEN_FIND_MODE=FAST
+export MIOPEN_FIND_ENFORCE=NONE
 
 ### srun ###
 NGPUS=$(($SLURM_NNODES * 8))
@@ -82,4 +82,9 @@ srun -N ${SLURM_NNODES} \
     --cpu-bind=cores \
     --export=ALL \
     --kill-on-bad-exit=1 \
-    python -u scripts/train_deeplabv3+.py --batch_size 16 --num_iters 500_000    
+    python -u scripts/train_deeplabv3+.py \
+        --batch_size 16 \
+        --num_iters 150_000 \
+        --batches_per_eval 100 \
+        --log_interval 10 \
+        --num_workers 4
