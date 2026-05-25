@@ -83,6 +83,7 @@ CONFIGURATION=${CONFIGURATION:-2d}
 FOLD=${FOLD:-0}
 NUM_GPUS=${NUM_GPUS:-8}
 NNUNET_EXTRA_ARGS=${NNUNET_EXTRA_ARGS:---npz}
+RUN_TRAINING=${RUN_TRAINING:-1}
 RUN_EXTERNAL_TEST=${RUN_EXTERNAL_TEST:-1}
 LOG_EXTERNAL_TEST_TO_WANDB=${LOG_EXTERNAL_TEST_TO_WANDB:-1}
 PREPARE_NNUNET_DATASET=${PREPARE_NNUNET_DATASET:-1}
@@ -92,6 +93,8 @@ DATASET_DIR="${nnUNet_raw}/Dataset$(printf "%03d" "$DATASET_ID")_${DATASET_NAME}
 PREPROCESSED_DATASET_DIR="${nnUNet_preprocessed}/Dataset$(printf "%03d" "$DATASET_ID")_${DATASET_NAME}"
 
 echo "NUM_GPUS=$NUM_GPUS"
+echo "RUN_TRAINING=$RUN_TRAINING"
+echo "RUN_EXTERNAL_TEST=$RUN_EXTERNAL_TEST"
 echo "nnUNet_compile=$nnUNet_compile"
 echo "MIOPEN_FIND_MODE=$MIOPEN_FIND_MODE"
 echo "MIOPEN_FIND_ENFORCE=$MIOPEN_FIND_ENFORCE"
@@ -140,13 +143,17 @@ if [[ "$nnUNet_wandb_enabled" != "1" ]]; then
     rm -rf "${nnUNet_results}/Dataset$(printf "%03d" "$DATASET_ID")_${DATASET_NAME}/nnUNetTrainer__nnUNetPlans__${CONFIGURATION}/fold_${FOLD}/wandb"
 fi
 
-srun -N 1 \
-    -n 1 \
-    --gpus-per-task="$NUM_GPUS" \
-    --cpu-bind=cores \
-    --export=ALL \
-    --kill-on-bad-exit=1 \
-    nnUNetv2_train "$DATASET_ID" "$CONFIGURATION" "$FOLD" "${EXTRA_ARGS[@]}" -num_gpus "$NUM_GPUS"
+if [[ "$RUN_TRAINING" == "1" ]]; then
+    srun -N 1 \
+        -n 1 \
+        --gpus-per-task="$NUM_GPUS" \
+        --cpu-bind=cores \
+        --export=ALL \
+        --kill-on-bad-exit=1 \
+        nnUNetv2_train "$DATASET_ID" "$CONFIGURATION" "$FOLD" "${EXTRA_ARGS[@]}" -num_gpus "$NUM_GPUS"
+else
+    echo "Skipping nnU-Net training because RUN_TRAINING=$RUN_TRAINING"
+fi
 
 if [[ "$RUN_EXTERNAL_TEST" == "1" ]]; then
     PREDICTION_DIR="${PWD}/nnu_net/predictions/Dataset$(printf "%03d" "$DATASET_ID")_${DATASET_NAME}/${CONFIGURATION}/fold_${FOLD}/${PREDICT_CHECKPOINT%.pth}"

@@ -93,6 +93,19 @@ def prediction_path_for_label(pred_dir: Path, label_path: Path) -> Path:
     )
 
 
+def validate_prediction_dir(pred_dir: Path) -> None:
+    if not pred_dir.is_dir():
+        raise FileNotFoundError(
+            f"Prediction directory does not exist: {pred_dir}. "
+            "Run nnUNetv2_predict before evaluating test metrics."
+        )
+    if not any(pred_dir.glob("*.png")):
+        raise FileNotFoundError(
+            f"Prediction directory contains no PNG predictions: {pred_dir}. "
+            "Run nnUNetv2_predict successfully before evaluating test metrics."
+        )
+
+
 def write_rgb_prediction(prediction: np.ndarray, output_path: Path) -> None:
     rgb = np.zeros((*prediction.shape, 3), dtype=np.uint8)
     for label_value, color in RGB_COLORS.items():
@@ -111,6 +124,8 @@ def summarize(rows: list[dict[str, float | str]]) -> dict[str, float | int]:
 
 
 def evaluate(pred_dir: Path, label_dir: Path, rgb_output_dir: Path | None) -> list[dict[str, float | str]]:
+    validate_prediction_dir(pred_dir)
+
     label_paths = sorted(label_dir.glob("*.png"))
     if not label_paths:
         raise FileNotFoundError(f"No PNG labels found in {label_dir}")
