@@ -23,6 +23,7 @@ source activate /lustre/orion/syb111/world-shared/environments/pytorch-cv/
 ### wandb settings ### 
 export https_proxy=http://proxy.ccs.ornl.gov:3128
 export http_proxy=$https_proxy
+export WANDB_ENTITY=${WANDB_ENTITY:-jail-ai}
 export WANDB_HTTP_TIMEOUT=90
 
 ### network / rccl settings ###
