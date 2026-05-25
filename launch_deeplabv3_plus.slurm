@@ -27,12 +27,34 @@ export http_proxy=$https_proxy
 export WANDB_ENTITY=${WANDB_ENTITY:-jail-ai}
 export WANDB_HTTP_TIMEOUT=90
 
-### hf cache settings ###
-export HF_HOME="${PWD}/nnu_net/cache/huggingface"
-export HUGGINGFACE_HUB_CACHE="$HF_HOME/hub"
-export HF_HUB_OFFLINE=1
-mkdir -p "$HUGGINGFACE_HUB_CACHE"
+### pretrained model cache settings ###
+export MODEL_CACHE_ROOT="${PWD}/nnu_net/cache/model_weights"
+export HF_HOME="${MODEL_CACHE_ROOT}/huggingface"
+export HUGGINGFACE_HUB_CACHE="${HF_HOME}/hub"
+export TORCH_HOME="${MODEL_CACHE_ROOT}/torch"
+export XDG_CACHE_HOME="${MODEL_CACHE_ROOT}/xdg"
+mkdir -p "$HUGGINGFACE_HUB_CACHE" "$TORCH_HOME/hub/checkpoints" "$XDG_CACHE_HOME"
 
+python - <<'PY'
+from huggingface_hub import hf_hub_download
+from torch.hub import load_state_dict_from_url
+
+repo = "smp-hub/resnet101.imagenet"
+revision = "cd7c15e8c51da86ae6a084515fdb962d0c94e7d1"
+
+try:
+    print(hf_hub_download(repo, "config.json", revision=revision))
+    print(hf_hub_download(repo, "model.safetensors", revision=revision))
+except Exception as exc:
+    print(f"[WARN] Could not warm Hugging Face cache: {exc}")
+
+print(load_state_dict_from_url(
+    "https://download.pytorch.org/models/resnet101-5d3b4d8f.pth",
+    map_location="cpu",
+))
+PY
+
+export HF_HUB_OFFLINE=1
 
 ### network / rccl settings ###
 export MASTER_ADDR=$(hostname -i)
