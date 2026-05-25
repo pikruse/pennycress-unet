@@ -52,4 +52,4 @@ srun -N ${SLURM_NNODES} \
     --cpu-bind=cores \
     --export=ALL \
     --kill-on-bad-exit=1 \
-    python -u scripts/train_unet_ddp.py --batch_size 16 --num_iters 500_000    
+    python -u scripts/train_unet.py --batch_size 16 --num_iters 500_000    
