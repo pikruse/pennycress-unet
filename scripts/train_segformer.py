@@ -11,6 +11,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import torch
 import torch.distributed as dist
+import segmentation_models_pytorch as smp
 
 from argparse import ArgumentParser
 from torch.utils.data import DataLoader, DistributedSampler
@@ -63,7 +64,7 @@ def setup_ddp():
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--batch_size", type=int, default=32)
+    p.add_argument("--batch_size", type=int, default=4)
     p.add_argument(
         "--distance_weights",
         choices=("none", "up", "down"),
@@ -71,7 +72,7 @@ def parse_args():
         help="Pixel weighting mode: none disables distance weights, up weights seed borders up, down weights seed borders down.",
     )
     p.add_argument("--lr", type=float, default=1e-6)
-    p.add_argument("--num_iters", type=int, default=50_000)
+    p.add_argument("--num_iters", type=int, default=150_000)
     p.add_argument("--eval_interval", type=int, default=1000)
     p.add_argument("--batches_per_eval", type=int, default=1000)
     p.add_argument("--log_interval", type=int, default=10)
@@ -138,7 +139,7 @@ def distance_weight_options(mode):
     raise ValueError(f"Unsupported distance weight mode: {mode}")
 
 def default_checkpoint_dir(mode):
-    return Path(f"checkpoints/unet_{mode}")
+    return Path(f"checkpoints/segformer_mit_b5_{mode}")
 
 def save_checkpoint(
     checkpoint_dir,
@@ -153,7 +154,7 @@ def save_checkpoint(
     border_weight,
 ):
     checkpoint = {
-        'architecture': 'unet',
+        'architecture': 'segformer',
         'model': model.module.state_dict(),
         'optimizer': optimizer.state_dict(),
         'kwargs': model_kwargs,
@@ -210,21 +211,19 @@ def main():
     # checkpoint setup
     CHECKPOINT_DIR = args.checkpoint_dir or default_checkpoint_dir(args.distance_weights)
     if rank == 0:
-        CHECKPOINT_DIR.mkdir(exist_ok=True, parents=True)
+        CHECKPOINT_DIR.mkdir(exist_ok=True, parents=True) 
 
-    #### model init ####
+    # model init
     model_kwargs = {
-        'layer_sizes': [32, 64, 128, 256, 512],
-        'in_channels': 3,
-        'out_channels': 4,
-        'conv_per_block': 3,
-        'dropout_rate': 0.1,
-        'hidden_activation': torch.nn.GELU(),
-        'output_activation': None
+        "encoder_name": "mit_b5",
+        "encoder_weights": "imagenet",
+        "in_channels": 3,
+        "classes": 4,
+        "activation": None,
     }
-    unet = BuildUNet.UNet(**model_kwargs).to(device)
-    model = torch.nn.parallel.DistributedDataParallel(unet,
-                                                      device_ids=[0]) 
+    model = smp.Segformer(**model_kwargs).to(device)
+    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[0])
 
     #### Data Loading ####
     # define options
@@ -342,15 +341,16 @@ def main():
     # training loop
     # refresh log
     if is_main(rank):
-        run_name = wandb_run_name("unet", args, world_size, max_lr)
+        model_name = "segformer_mit_b5"
+        run_name = wandb_run_name(model_name, args, world_size, max_lr)
         wandb.init(
             project="pennycress-unet",
             entity=os.getenv("WANDB_ENTITY"),
             name=run_name,
-            group=f"unet_dw-{args.distance_weights}",
-            tags=wandb_run_tags("unet", args, world_size),
+            group=f"{model_name}_dw-{args.distance_weights}",
+            tags=wandb_run_tags(model_name, args, world_size),
             config={
-                "model_name": "unet",
+                "model_name": model_name,
                 "distance_weights": args.distance_weights,
                 "border_weight": border_weight,
                 "checkpoint_dir": str(CHECKPOINT_DIR),

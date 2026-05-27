@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -A SYB114
-#SBATCH -J deeplabv3+-infer
+#SBATCH -J model-infer
 #SBATCH -N 1
 #SBATCH -t 00:30:00
 #SBATCH -p batch
@@ -38,28 +38,65 @@ mkdir -p "$MIOPEN_USER_DB_PATH"
 export MIOPEN_FIND_MODE=FAST
 export MIOPEN_FIND_ENFORCE=NONE
 
+MODEL=${MODEL:-auto}
 DISTANCE_WEIGHTS=${DISTANCE_WEIGHTS:-up}
-RUN_LABEL=${RUN_LABEL:-deeplabv3_plus_${DISTANCE_WEIGHTS}}
+PREDICTION_FORMAT=${PREDICTION_FORMAT:-auto}
+PRED_PREFIX=${PRED_PREFIX:-pred_}
+MEASURE_PODS=${MEASURE_PODS:-0}
+SKIP_INFERENCE=${SKIP_INFERENCE:-0}
+SKIP_EVALUATION=${SKIP_EVALUATION:-0}
 
-if [[ -z "${CHECKPOINT_DIR:-}" ]]; then
-    CHECKPOINT_DIR="checkpoints/deeplabv3_plus_${DISTANCE_WEIGHTS}"
+if [[ -z "${MASK_DIR:-}" ]]; then
+    if [[ "$MODEL" == "nnunet" || "$MODEL" == "nnUNet" || "$MODEL" == "nnunetv2" ]]; then
+        MASK_DIR="nnu_net/nnUNet_raw/Dataset501_PennycressPods/labelsTs"
+    else
+        MASK_DIR="data/test/test_masks_preproc"
+    fi
 fi
 
-PREDICTION_DIR=${PREDICTION_DIR:-data/test/${RUN_LABEL}_test_predictions}
-POD_PREDICTION_DIR=${POD_PREDICTION_DIR:-data/test/${RUN_LABEL}_test_predictions_by_pod}
-OUTPUT_DIR=${OUTPUT_DIR:-data/test/${RUN_LABEL}_test_metrics}
-MEASURE_PODS=${MEASURE_PODS:-0}
+MODEL_ARGS=(
+    --model "$MODEL"
+    --distance-weights "$DISTANCE_WEIGHTS"
+    --prediction-format "$PREDICTION_FORMAT"
+    --pred-prefix "$PRED_PREFIX"
+)
 
 CHECKPOINT_ARGS=()
 if [[ -n "${CHECKPOINT:-}" ]]; then
     CHECKPOINT_ARGS=(--checkpoint "$CHECKPOINT")
-else
+elif [[ -n "${CHECKPOINT_DIR:-}" ]]; then
     CHECKPOINT_ARGS=(--checkpoint-dir "$CHECKPOINT_DIR")
+fi
+
+PATH_ARGS=(
+    --image-dir "${IMAGE_DIR:-data/test/test_images}"
+    --mask-dir "$MASK_DIR"
+    --pod-mask-dir "${POD_MASK_DIR:-data/test/test_masks_by_pod}"
+)
+if [[ -n "${PREDICTION_DIR:-}" ]]; then
+    PATH_ARGS+=(--prediction-dir "$PREDICTION_DIR")
+fi
+if [[ -n "${POD_PREDICTION_DIR:-}" ]]; then
+    PATH_ARGS+=(--pod-prediction-dir "$POD_PREDICTION_DIR")
+fi
+if [[ -n "${RGB_OUTPUT_DIR:-}" ]]; then
+    PATH_ARGS+=(--rgb-output-dir "$RGB_OUTPUT_DIR")
+fi
+if [[ -n "${OUTPUT_DIR:-}" ]]; then
+    PATH_ARGS+=(--output-dir "$OUTPUT_DIR")
 fi
 
 MEASURE_ARGS=()
 if [[ "$MEASURE_PODS" == "1" || "$MEASURE_PODS" == "true" || "$MEASURE_PODS" == "TRUE" ]]; then
     MEASURE_ARGS=(--measure-pods)
+fi
+
+SKIP_ARGS=()
+if [[ "$SKIP_INFERENCE" == "1" || "$SKIP_INFERENCE" == "true" || "$SKIP_INFERENCE" == "TRUE" ]]; then
+    SKIP_ARGS+=(--skip-inference)
+fi
+if [[ "$SKIP_EVALUATION" == "1" || "$SKIP_EVALUATION" == "true" || "$SKIP_EVALUATION" == "TRUE" ]]; then
+    SKIP_ARGS+=(--skip-evaluation)
 fi
 
 srun -N 1 \
@@ -69,12 +106,9 @@ srun -N 1 \
     --export=ALL \
     --kill-on-bad-exit=1 \
     python -u scripts/inference.py \
+        "${MODEL_ARGS[@]}" \
         "${CHECKPOINT_ARGS[@]}" \
-        --image-dir data/test/test_images \
-        --mask-dir data/test/test_masks_preproc \
-        --prediction-dir "$PREDICTION_DIR" \
-        --pod-prediction-dir "$POD_PREDICTION_DIR" \
-        --pod-mask-dir data/test/test_masks_by_pod \
-        --output-dir "$OUTPUT_DIR" \
+        "${PATH_ARGS[@]}" \
         --device cuda \
+        "${SKIP_ARGS[@]}" \
         "${MEASURE_ARGS[@]}"

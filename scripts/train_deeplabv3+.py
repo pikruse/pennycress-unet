@@ -154,6 +154,7 @@ def save_checkpoint(
     border_weight,
 ):
     checkpoint = {
+        'architecture': 'deeplabv3plus',
         'model': model.module.state_dict(),
         'optimizer': optimizer.state_dict(),
         'kwargs': model_kwargs,
