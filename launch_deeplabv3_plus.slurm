@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH -A SYB114
-#SBATCH -J deeplabv3+ 
+#SBATCH -J deeplabv3+-down
 #SBATCH -N 1 
-#SBATCH -t 6:00:00
+#SBATCH -t 8:00:00
 #SBATCH -p extended
 #SBATCH -C nvme
 #SBATCH -o logs/%x-%j.out # Out Path
