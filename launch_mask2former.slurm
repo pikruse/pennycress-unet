@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH -A SYB114
-#SBATCH -J segformer-b5
+#SBATCH -J mask2former
 #SBATCH -N 1 
-#SBATCH -t 8:00:00
+#SBATCH -t 14:00:00
 #SBATCH -p extended
 #SBATCH -C nvme
 #SBATCH -o logs/%x-%j.out # Out Path
@@ -35,19 +35,19 @@ export XDG_CACHE_HOME="${MODEL_CACHE_ROOT}/xdg"
 mkdir -p "$HUGGINGFACE_HUB_CACHE" "$TORCH_HOME/hub/checkpoints" "$XDG_CACHE_HOME"
 
 python - <<'PY'
-import segmentation_models_pytorch as smp
+import os
 
-model_kwargs = {
-    "encoder_name": "mit_b5",
-    "encoder_weights": "imagenet",
-    "in_channels": 3,
-    "classes": 4,
-    "activation": None,
-}
+from utils.Mask2FormerSemantic import Mask2FormerSemantic
 
-model = smp.Segformer(**model_kwargs)
+model_name = os.getenv("MASK2FORMER_MODEL_NAME", "facebook/mask2former-swin-large-ade-semantic")
+model = Mask2FormerSemantic(
+    pretrained_model_name=model_name,
+    num_labels=3,
+    pretrained=True,
+    ignore_mismatched_sizes=True,
+)
 num_params = sum(p.numel() for p in model.parameters())
-print(f"Warmed SegFormer mit_b5 weights; parameters={num_params:,}")
+print(f"Warmed Mask2Former weights from {model_name}; parameters={num_params:,}")
 PY
 
 export HF_HUB_OFFLINE=1
@@ -73,8 +73,10 @@ export MIOPEN_FIND_ENFORCE=NONE
 ### srun ###
 NGPUS=$(($SLURM_NNODES * 8))
 DISTANCE_WEIGHTS=${DISTANCE_WEIGHTS:-none}
+MASK2FORMER_MODEL_NAME=${MASK2FORMER_MODEL_NAME:-facebook/mask2former-swin-large-ade-semantic}
+BATCH_SIZE=${BATCH_SIZE:-1}
 if [[ -z "${CHECKPOINT_DIR:-}" ]]; then
-    CHECKPOINT_DIR="checkpoints/segformer_mit_b5_${DISTANCE_WEIGHTS}"
+    CHECKPOINT_DIR="checkpoints/mask2former_swin_large_ade_semantic_${DISTANCE_WEIGHTS}"
 fi
 
 srun -N ${SLURM_NNODES} \
@@ -83,10 +85,11 @@ srun -N ${SLURM_NNODES} \
     --cpu-bind=cores \
     --export=ALL \
     --kill-on-bad-exit=1 \
-    python -u scripts/train_segformer.py \
-        --batch_size 16 \
+    python -u scripts/train_mask2former.py \
+        --batch_size "${BATCH_SIZE}" \
         --distance_weights "${DISTANCE_WEIGHTS}" \
         --checkpoint_dir "${CHECKPOINT_DIR}" \
+        --pretrained_model_name "${MASK2FORMER_MODEL_NAME}" \
         --num_iters 150_000 \
         --batches_per_eval 100 \
         --log_interval 10 \
