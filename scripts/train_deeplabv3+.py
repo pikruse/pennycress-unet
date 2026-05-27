@@ -65,6 +65,12 @@ def setup_ddp():
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--batch_size", type=int, default=4)
+    p.add_argument(
+        "--distance_weights",
+        choices=("none", "up", "down"),
+        default="up",
+        help="Pixel weighting mode: none disables distance weights, up weights seed borders up, down weights seed borders down.",
+    )
     p.add_argument("--lr", type=float, default=1e-6)
     p.add_argument("--num_iters", type=int, default=150_000)
     p.add_argument("--eval_interval", type=int, default=1000)
@@ -72,6 +78,7 @@ def parse_args():
     p.add_argument("--log_interval", type=int, default=10)
     p.add_argument("--num_workers", type=int, default=0)
     p.add_argument("--seed", type=int, default=1)
+    p.add_argument("--checkpoint_dir", type=Path, default=None)
     return p.parse_args()
 
 def cleanup_ddp():
@@ -122,7 +129,30 @@ def make_loader(dataset, batch_size, sampler, num_workers):
         loader_kwargs["persistent_workers"] = True
     return DataLoader(dataset, **loader_kwargs)
 
-def save_checkpoint(checkpoint_dir, model, optimizer, model_kwargs, iter_num, best_val_loss, train_idx, val_idx):
+def distance_weight_options(mode):
+    if mode == "none":
+        return False, None
+    if mode == "up":
+        return True, 5
+    if mode == "down":
+        return True, 0.5
+    raise ValueError(f"Unsupported distance weight mode: {mode}")
+
+def default_checkpoint_dir(mode):
+    return Path(f"checkpoints/deeplabv3_plus_{mode}")
+
+def save_checkpoint(
+    checkpoint_dir,
+    model,
+    optimizer,
+    model_kwargs,
+    iter_num,
+    best_val_loss,
+    train_idx,
+    val_idx,
+    distance_weights,
+    border_weight,
+):
     checkpoint = {
         'model': model.module.state_dict(),
         'optimizer': optimizer.state_dict(),
@@ -131,18 +161,29 @@ def save_checkpoint(checkpoint_dir, model, optimizer, model_kwargs, iter_num, be
         'best_val_loss': best_val_loss,
         'train_ids': train_idx,
         'val_ids': val_idx,
+        'distance_weights': distance_weights,
+        'border_weight': border_weight,
     }
     checkpoint_path = checkpoint_dir / f"checkpoint_{iter_num:06d}.pt"
     torch.save(checkpoint, checkpoint_path)
+
+def log_wandb(metrics, step):
+    metrics = dict(metrics)
+    metrics["iter_num"] = step
+    metrics["optimizer_step"] = step
+    wandb.log(metrics, step=step)
 
 def main():
     print(f"[Rank {os.environ.get('SLURM_PROCID', '?')}] Available devices: {torch.cuda.device_count()}")
     args = parse_args()
     device, local_rank, rank, world_size = setup_ddp()
     print(f"[Rank {os.environ.get('SLURM_PROCID')}] Visible CUDA devices: {torch.cuda.device_count()}")
+    use_distance_weights, border_weight = distance_weight_options(args.distance_weights)
+    if is_main(rank):
+        print(f"distance_weights={args.distance_weights}")
 
     # checkpoint setup
-    CHECKPOINT_DIR = Path("checkpoints/deeplabv3_plus")
+    CHECKPOINT_DIR = args.checkpoint_dir or default_checkpoint_dir(args.distance_weights)
     if rank == 0:
         CHECKPOINT_DIR.mkdir(exist_ok=True, parents=True) 
 
@@ -210,7 +251,6 @@ def main():
     masks = multiclass_masks
     tile_size = 128
     train_prop = 0.8
-    distance_weights = True
 
     # create one train/val split on rank 0 and share it with every DDP process
     train_idx, val_idx = make_shared_split(len(images), train_prop, args.seed, rank)
@@ -222,8 +262,8 @@ def main():
         tile_size=tile_size, 
         split='train',
         n_pad = n_pad,
-        distance_weights=True,
-        border_weight=5
+        distance_weights=use_distance_weights,
+        border_weight=border_weight
         )
 
     val_generator = TG.TileGenerator(
@@ -232,8 +272,8 @@ def main():
         tile_size=tile_size, 
         split='val',
         n_pad = n_pad,
-        distance_weights=True,
-        border_weight=5
+        distance_weights=use_distance_weights,
+        border_weight=border_weight
         )
 
     # init ddp samplers
@@ -249,7 +289,7 @@ def main():
     #### Train Model ####
     # define our loss function, optimizer
     reload(WeightedCrossEntropy)
-    if distance_weights:
+    if use_distance_weights:
         loss_function = WeightedCrossEntropy.WeightedCrossEntropy(device=device)
     else:
         loss_function = torch.nn.CrossEntropyLoss()
@@ -278,7 +318,21 @@ def main():
         wandb.init(
             project="pennycress-unet",
             entity=os.getenv("WANDB_ENTITY"),
+            config={
+                "distance_weights": args.distance_weights,
+                "border_weight": border_weight,
+                "checkpoint_dir": str(CHECKPOINT_DIR),
+                "batch_size": args.batch_size,
+                "num_iters": args.num_iters,
+                "eval_interval": args.eval_interval,
+                "batches_per_eval": args.batches_per_eval,
+                "log_interval": args.log_interval,
+                "num_workers": args.num_workers,
+                "seed": args.seed,
+            },
         )
+        wandb.define_metric("iter_num")
+        wandb.define_metric("*", step_metric="iter_num")
 
     # keep training until break
     while True:
@@ -317,11 +371,14 @@ def main():
 
         # wandb logging
         if is_main(rank):
-            wandb.log({
-                "train_loss": train_loss,
-                "val_loss": val_loss,
-                "iter_num": iter_num
-            })
+            log_wandb(
+                {
+                    "eval/train_loss": train_loss,
+                    "eval/val_loss": val_loss,
+                    "val_loss": val_loss,
+                },
+                step=iter_num,
+            )
 
         # checkpoint model
         if rank == 0 and iter_num > 0:
@@ -334,6 +391,8 @@ def main():
                 best_val_loss,
                 train_idx,
                 val_idx,
+                args.distance_weights,
+                border_weight,
             )
 
         # book keeping
@@ -397,23 +456,28 @@ def main():
 
                 optimizer.step()
                 optimizer.zero_grad(set_to_none=True)
+                next_iter_num = iter_num + 1
 
                 # update wandb
-                if iter_num % args.log_interval == 0 or iter_num + 1 >= max_iters:
+                if next_iter_num == 1 or next_iter_num % args.log_interval == 0 or next_iter_num >= max_iters:
                     reduced_loss = reduce_scalar_mean(loss, device)
                 else:
                     reduced_loss = None
                 if is_main(rank) and reduced_loss is not None:
-                    wandb.log({
-                        "train_loss": reduced_loss,
-                        "lr": lr,
-                        "iter_num": iter_num
-                    })
+                    log_wandb(
+                        {
+                            "train/loss": reduced_loss,
+                            "train_loss": reduced_loss,
+                            "train/lr": lr,
+                            "lr": lr,
+                        },
+                        step=next_iter_num,
+                    )
 
                 # update book keeping
                 pbar.update(1)
                 train_batches += 1
-                iter_num += 1
+                iter_num = next_iter_num
                 if train_batches >= eval_interval or iter_num >= max_iters:
                     break
 
@@ -432,10 +496,14 @@ def main():
                     best_val_loss,
                     train_idx,
                     val_idx,
+                    args.distance_weights,
+                    border_weight,
                 )
                 print(f'maximum iterations reached: {max_iters}')
             break
         pbar.close()
+    if is_main(rank):
+        wandb.finish()
     cleanup_ddp()
         
 if __name__ == "__main__":

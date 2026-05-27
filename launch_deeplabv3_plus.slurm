@@ -2,8 +2,8 @@
 #SBATCH -A SYB114
 #SBATCH -J deeplabv3+ 
 #SBATCH -N 1 
-#SBATCH -t 24:00:00
-#SBATCH -p batch
+#SBATCH -t 6:00:00
+#SBATCH -p extended
 #SBATCH -C nvme
 #SBATCH -o logs/%x-%j.out # Out Path
 #SBATCH -e logs/%x-%j.err # Err Path
@@ -75,6 +75,10 @@ export MIOPEN_FIND_ENFORCE=NONE
 
 ### srun ###
 NGPUS=$(($SLURM_NNODES * 8))
+DISTANCE_WEIGHTS=${DISTANCE_WEIGHTS:-none}
+if [[ -z "${CHECKPOINT_DIR:-}" ]]; then
+    CHECKPOINT_DIR="checkpoints/deeplabv3_plus_${DISTANCE_WEIGHTS}"
+fi
 
 srun -N ${SLURM_NNODES} \
     -n ${NGPUS} \
@@ -84,6 +88,8 @@ srun -N ${SLURM_NNODES} \
     --kill-on-bad-exit=1 \
     python -u scripts/train_deeplabv3+.py \
         --batch_size 16 \
+        --distance_weights "${DISTANCE_WEIGHTS}" \
+        --checkpoint_dir "${CHECKPOINT_DIR}" \
         --num_iters 150_000 \
         --batches_per_eval 100 \
         --log_interval 10 \

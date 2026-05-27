@@ -1,6 +1,6 @@
 import numpy as np
 
-def iou(y_true, y_pred):
+def iou(y_true, y_pred, empty_score=1.0):
 
     """
     Intersection over Union (IoU) metric for semantic segmentation
@@ -23,6 +23,8 @@ def iou(y_true, y_pred):
     # calculate intersection and union
     intersection = np.sum(y_true * y_pred)
     union = np.sum(y_true) + np.sum(y_pred) - intersection
+    if union == 0:
+        return empty_score
 
     # calculate IoU and return
     return intersection / union
