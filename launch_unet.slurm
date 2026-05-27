@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH -A SYB114
-#SBATCH -J pennycress-unet-ddp 
-#SBATCH -N 32 
-#SBATCH -t 24:00:00
-#SBATCH -p extended 
+#SBATCH -J unet 
+#SBATCH -N 1 
+#SBATCH -t 2:00:00
+#SBATCH -p batch
 #SBATCH -C nvme
-#SBATCH -o logs/%x.out # Out Path
-#SBATCH -e logs/%x.err # Err Path
+#SBATCH -o logs/%x-%j.out # Out Path
+#SBATCH -e logs/%x-%j.err # Err Path
 #SBATCH --open-mode=truncate # Overwrite .out/.err
 
 ### settings, environment, and module loads ###
