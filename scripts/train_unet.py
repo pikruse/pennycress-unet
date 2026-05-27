@@ -172,6 +172,31 @@ def log_wandb(metrics, step):
     metrics["optimizer_step"] = step
     wandb.log(metrics, step=step)
 
+def compact_number(value):
+    if value >= 1000 and value % 1000 == 0:
+        return f"{value // 1000}k"
+    return str(value)
+
+def wandb_run_name(model_name, args, world_size, max_lr):
+    return "_".join([
+        model_name,
+        f"dw-{args.distance_weights}",
+        f"bs{args.batch_size}",
+        f"gpus{world_size}",
+        f"iters{compact_number(args.num_iters)}",
+        f"lr{max_lr:g}",
+        f"seed{args.seed}",
+    ])
+
+def wandb_run_tags(model_name, args, world_size):
+    return [
+        model_name,
+        f"distance_weights:{args.distance_weights}",
+        f"batch_size:{args.batch_size}",
+        f"gpus:{world_size}",
+        f"seed:{args.seed}",
+    ]
+
 def main():
     print(f"[Rank {os.environ.get('SLURM_PROCID', '?')}] Available devices: {torch.cuda.device_count()}")
     args = parse_args()
@@ -316,20 +341,30 @@ def main():
     # training loop
     # refresh log
     if is_main(rank):
+        run_name = wandb_run_name("unet", args, world_size, max_lr)
         wandb.init(
             project="pennycress-unet",
             entity=os.getenv("WANDB_ENTITY"),
+            name=run_name,
+            group=f"unet_dw-{args.distance_weights}",
+            tags=wandb_run_tags("unet", args, world_size),
             config={
+                "model_name": "unet",
                 "distance_weights": args.distance_weights,
                 "border_weight": border_weight,
                 "checkpoint_dir": str(CHECKPOINT_DIR),
                 "batch_size": args.batch_size,
+                "world_size": world_size,
                 "num_iters": args.num_iters,
                 "eval_interval": args.eval_interval,
                 "batches_per_eval": args.batches_per_eval,
                 "log_interval": args.log_interval,
                 "num_workers": args.num_workers,
                 "seed": args.seed,
+                "warmup_iters": warmup_iters,
+                "lr_decay_iters": lr_decay_iters,
+                "max_lr": max_lr,
+                "min_lr": min_lr,
             },
         )
         wandb.define_metric("iter_num")
