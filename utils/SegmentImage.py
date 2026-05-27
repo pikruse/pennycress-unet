@@ -7,8 +7,15 @@ import torch
 import cv2
 
 from tqdm.auto import tqdm
-from IPython.display import clear_output
-from ipywidgets import FloatProgress
+try:
+    from IPython.display import clear_output
+except ModuleNotFoundError:
+    def clear_output(*args, **kwargs):
+        return None
+try:
+    from ipywidgets import FloatProgress
+except ModuleNotFoundError:
+    FloatProgress = None
 from scipy import ndimage
 from PIL import Image
 
@@ -18,7 +25,7 @@ sys.path.append('../')
 from utils.Metrics import iou
 from utils.GetLowestGPU import GetLowestGPU
 
-device = torch.device(GetLowestGPU(verbose=0))
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def segment_image(model,
                   image_path,

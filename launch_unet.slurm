@@ -45,6 +45,10 @@ export MIOPEN_FIND_MODE=NORMAL
 
 ### srun ###
 NGPUS=$(($SLURM_NNODES * 8))
+DISTANCE_WEIGHTS=${DISTANCE_WEIGHTS:-none}
+if [[ -z "${CHECKPOINT_DIR:-}" ]]; then
+    CHECKPOINT_DIR="checkpoints/unet_${DISTANCE_WEIGHTS}"
+fi
 
 srun -N ${SLURM_NNODES} \
     -n ${NGPUS} \
@@ -52,4 +56,11 @@ srun -N ${SLURM_NNODES} \
     --cpu-bind=cores \
     --export=ALL \
     --kill-on-bad-exit=1 \
-    python -u scripts/train_unet_ddp.py --batch_size 16 --num_iters 500_000    
+    python -u scripts/train_unet.py \
+        --batch_size 16 \
+        --distance_weights "${DISTANCE_WEIGHTS}" \
+        --checkpoint_dir "${CHECKPOINT_DIR}" \
+        --num_iters 150_000 \
+        --batches_per_eval 100 \
+        --log_interval 10 \
+        --num_workers 4
