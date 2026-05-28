@@ -121,6 +121,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--checkpoint", type=Path, default=None)
     parser.add_argument("--checkpoint-dir", type=Path, default=None)
     parser.add_argument("--image-dir", type=Path, default=Path("data/test/test_images"))
+    parser.add_argument(
+        "--image-name",
+        action="append",
+        default=[],
+        help="Limit inference to one image name. May be passed more than once.",
+    )
     parser.add_argument("--mask-dir", "--label-dir", dest="mask_dir", type=Path, default=None)
     parser.add_argument("--prediction-dir", type=Path, default=None)
     parser.add_argument("--pod-prediction-dir", type=Path, default=None)
@@ -330,6 +336,20 @@ def labeled_image_names(image_dir: Path, mask_dir: Path | None) -> list[str]:
     return names
 
 
+def select_image_names(image_names: list[str], selected_names: list[str]) -> list[str]:
+    if not selected_names:
+        return image_names
+
+    available = set(image_names)
+    missing = [name for name in selected_names if name not in available]
+    if missing:
+        raise FileNotFoundError(
+            f"{len(missing)} requested image names are not in the selected image/mask set. "
+            f"First missing image: {missing[0]}"
+        )
+    return selected_names
+
+
 def run_label(model_key: str) -> str:
     if model_key in MODEL_SPECS:
         return MODEL_SPECS[model_key].label
@@ -491,7 +511,10 @@ def main() -> None:
     if run_inference:
         import utils.SegmentImage as SegmentImage
 
-        image_names = labeled_image_names(args.image_dir, mask_dir)
+        image_names = select_image_names(
+            labeled_image_names(args.image_dir, mask_dir),
+            args.image_name,
+        )
         SegmentImage.segment_image(
             model=model,
             image_path=path_with_sep(args.image_dir),

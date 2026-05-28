@@ -4,7 +4,7 @@
 #SBATCH -N 1
 #SBATCH -t 00:30:00
 #SBATCH -p batch
-#SBATCH -q debug
+##SBATCH -q debug
 #SBATCH -C nvme
 #SBATCH -o logs/%x-%j.out
 #SBATCH -e logs/%x-%j.err
@@ -73,6 +73,9 @@ PATH_ARGS=(
     --mask-dir "$MASK_DIR"
     --pod-mask-dir "${POD_MASK_DIR:-data/test/test_masks_by_pod}"
 )
+if [[ -n "${IMAGE_NAME:-}" ]]; then
+    PATH_ARGS+=(--image-name "$IMAGE_NAME")
+fi
 if [[ -n "${PREDICTION_DIR:-}" ]]; then
     PATH_ARGS+=(--prediction-dir "$PREDICTION_DIR")
 fi
