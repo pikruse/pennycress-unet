@@ -34,21 +34,49 @@ export TORCH_HOME="${MODEL_CACHE_ROOT}/torch"
 export XDG_CACHE_HOME="${MODEL_CACHE_ROOT}/xdg"
 mkdir -p "$HUGGINGFACE_HUB_CACHE" "$TORCH_HOME/hub/checkpoints" "$XDG_CACHE_HOME"
 
+export SAM3_MODEL_NAME=${SAM3_MODEL_NAME:-facebook/sam3}
+export SAM3_ENCODER_IMAGE_SIZE=${SAM3_ENCODER_IMAGE_SIZE:-560}
+export SAM3_DECODER_CHANNELS=${SAM3_DECODER_CHANNELS:-256}
+export SAM3_LORA_R=${SAM3_LORA_R:-8}
+export SAM3_LORA_ALPHA=${SAM3_LORA_ALPHA:-16}
+export SAM3_LORA_DROPOUT=${SAM3_LORA_DROPOUT:-0.05}
+export BATCH_SIZE=${BATCH_SIZE:-1}
+
 python - <<'PY'
+import importlib.util
 import os
 
-from utils.sam3Custom import sam3Custom
+import transformers
 
-model_name = os.getenv("SAM3_MODEL_NAME, "facebook/sam3")
-model = sam3Custom(
+if not hasattr(transformers, "Sam3Model"):
+    raise RuntimeError(
+        "The active environment does not expose transformers.Sam3Model. "
+        "Install a Transformers release with SAM3 support before launching this job."
+    )
+if importlib.util.find_spec("peft") is None:
+    raise RuntimeError("The active environment is missing peft, which is required for SAM3 LoRA.")
+
+from utils.Sam3Custom import Sam3Custom
+
+model_name = os.getenv("SAM3_MODEL_NAME", "facebook/sam3")
+model = Sam3Custom(
     pretrained_model_name=model_name,
     num_labels=3,
     pretrained=True,
     ignore_mismatched_sizes=True,
-    peft=True
+    use_lora=True,
+    encoder_image_size=int(os.getenv("SAM3_ENCODER_IMAGE_SIZE", "560")),
+    decoder_channels=int(os.getenv("SAM3_DECODER_CHANNELS", "256")),
+    lora_r=int(os.getenv("SAM3_LORA_R", "8")),
+    lora_alpha=int(os.getenv("SAM3_LORA_ALPHA", "16")),
+    lora_dropout=float(os.getenv("SAM3_LORA_DROPOUT", "0.05")),
 )
 num_params = sum(p.numel() for p in model.parameters())
-print(f"Warmed SAM3 weights from {model_name}; parameters={num_params:,}")
+trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+print(
+    f"Warmed SAM3 weights from {model_name}; "
+    f"parameters={num_params:,}; trainable={trainable_params:,}"
+)
 PY
 
 export HF_HUB_OFFLINE=1
@@ -74,8 +102,6 @@ export MIOPEN_FIND_ENFORCE=NONE
 ### srun ###
 NGPUS=$(($SLURM_NNODES * 8))
 DISTANCE_WEIGHTS=${DISTANCE_WEIGHTS:-none}
-MASK2FORMER_MODEL_NAME=${MASK2FORMER_MODEL_NAME:-facebook/sam3}
-BATCH_SIZE=${BATCH_SIZE:-1}
 if [[ -z "${CHECKPOINT_DIR:-}" ]]; then
     CHECKPOINT_DIR="checkpoints/sam3_${DISTANCE_WEIGHTS}"
 fi
@@ -91,6 +117,11 @@ srun -N ${SLURM_NNODES} \
         --distance_weights "${DISTANCE_WEIGHTS}" \
         --checkpoint_dir "${CHECKPOINT_DIR}" \
         --pretrained_model_name "${SAM3_MODEL_NAME}" \
+        --encoder_image_size "${SAM3_ENCODER_IMAGE_SIZE}" \
+        --decoder_channels "${SAM3_DECODER_CHANNELS}" \
+        --lora_r "${SAM3_LORA_R}" \
+        --lora_alpha "${SAM3_LORA_ALPHA}" \
+        --lora_dropout "${SAM3_LORA_DROPOUT}" \
         --num_iters 150_000 \
         --batches_per_eval 100 \
         --log_interval 10 \
