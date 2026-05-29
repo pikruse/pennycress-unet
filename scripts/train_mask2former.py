@@ -16,7 +16,6 @@ from argparse import ArgumentParser
 from torch.utils.data import DataLoader, DistributedSampler
 from tqdm.auto import tqdm
 from PIL import Image
-from importlib import reload # when you make changes to a .py, force reload imports
 from DGXutils import GetFileNames, GetLowestGPU
 
 # make path start at root
@@ -25,10 +24,8 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from utils.GetLR import get_lr
 import utils.Train as Train
 import utils.Plot as Plot
-import utils.WeightedCrossEntropy as WeightedCrossEntropy
-import utils.BuildUNet as BuildUNet
 import utils.TileGenerator as TG
-import utils.DistanceMap as DistanceMap
+from utils.Mask2FormerSemantic import Mask2FormerSemantic
 
 os.environ["MIOPEN_FIND_MODE"] = "NORMAL"
 
@@ -63,21 +60,25 @@ def setup_ddp():
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--batch_size", type=int, default=32)
+    p.add_argument("--batch_size", type=int, default=1)
     p.add_argument(
         "--distance_weights",
         choices=("none", "up", "down"),
-        default="up",
-        help="Pixel weighting mode: none disables distance weights, up weights seed borders up, down weights seed borders down.",
+        default="none",
+        help="Accepted for launcher parity. Native Mask2Former training ignores pixel distance weights.",
     )
     p.add_argument("--lr", type=float, default=1e-6)
-    p.add_argument("--num_iters", type=int, default=50_000)
+    p.add_argument("--num_iters", type=int, default=150_000)
     p.add_argument("--eval_interval", type=int, default=1000)
     p.add_argument("--batches_per_eval", type=int, default=1000)
     p.add_argument("--log_interval", type=int, default=10)
     p.add_argument("--num_workers", type=int, default=0)
     p.add_argument("--seed", type=int, default=1)
     p.add_argument("--checkpoint_dir", type=Path, default=None)
+    p.add_argument(
+        "--pretrained_model_name",
+        default=os.getenv("MASK2FORMER_MODEL_NAME", "facebook/mask2former-swin-large-ade-semantic"),
+    )
     return p.parse_args()
 
 def cleanup_ddp():
@@ -138,7 +139,7 @@ def distance_weight_options(mode):
     raise ValueError(f"Unsupported distance weight mode: {mode}")
 
 def default_checkpoint_dir(mode):
-    return Path(f"checkpoints/unet_{mode}")
+    return Path(f"checkpoints/mask2former_swin_large_ade_semantic_{mode}")
 
 def save_checkpoint(
     checkpoint_dir,
@@ -153,7 +154,7 @@ def save_checkpoint(
     border_weight,
 ):
     checkpoint = {
-        'architecture': 'unet',
+        'architecture': 'mask2former',
         'model': model.module.state_dict(),
         'optimizer': optimizer.state_dict(),
         'kwargs': model_kwargs,
@@ -178,6 +179,37 @@ def compact_number(value):
         return f"{value // 1000}k"
     return str(value)
 
+FOREGROUND_MASK_CHANNELS = (1, 2, 3)
+
+def mask2former_targets(targets, device):
+    """Convert repo one-hot targets to Mask2Former per-image mask/class labels."""
+    masks = targets[:, :4]
+    mask_labels = []
+    class_labels = []
+
+    for sample in masks:
+        sample_masks = []
+        sample_classes = []
+        for class_id, channel_idx in enumerate(FOREGROUND_MASK_CHANNELS):
+            binary_mask = sample[channel_idx] > 0.5
+            if binary_mask.any():
+                sample_masks.append(binary_mask.float())
+                sample_classes.append(class_id)
+
+        if sample_masks:
+            mask_labels.append(torch.stack(sample_masks).to(device=device))
+            class_labels.append(torch.tensor(sample_classes, dtype=torch.long, device=device))
+        else:
+            height, width = sample.shape[-2:]
+            mask_labels.append(torch.zeros((0, height, width), dtype=torch.float32, device=device))
+            class_labels.append(torch.empty((0,), dtype=torch.long, device=device))
+
+    return mask_labels, class_labels
+
+def mask2former_loss(model, images, targets, device):
+    mask_labels, class_labels = mask2former_targets(targets, device)
+    return model(images, mask_labels=mask_labels, class_labels=class_labels)
+
 def wandb_run_name(model_name, args, world_size, max_lr):
     return "_".join([
         model_name,
@@ -198,33 +230,40 @@ def wandb_run_tags(model_name, args, world_size):
         f"seed:{args.seed}",
     ]
 
+def pretrained_model_slug(pretrained_model_name):
+    return pretrained_model_name.split("/")[-1].replace("-", "_")
+
 def main():
     print(f"[Rank {os.environ.get('SLURM_PROCID', '?')}] Available devices: {torch.cuda.device_count()}")
     args = parse_args()
     device, local_rank, rank, world_size = setup_ddp()
     print(f"[Rank {os.environ.get('SLURM_PROCID')}] Visible CUDA devices: {torch.cuda.device_count()}")
-    use_distance_weights, border_weight = distance_weight_options(args.distance_weights)
+    requested_distance_weights, _ = distance_weight_options(args.distance_weights)
+    use_distance_weights = False
+    border_weight = None
     if is_main(rank):
         print(f"distance_weights={args.distance_weights}")
+        if requested_distance_weights:
+            print("[WARN] Native Mask2Former loss ignores repo distance-weight maps; using foreground masks only.")
 
     # checkpoint setup
     CHECKPOINT_DIR = args.checkpoint_dir or default_checkpoint_dir(args.distance_weights)
     if rank == 0:
-        CHECKPOINT_DIR.mkdir(exist_ok=True, parents=True)
+        CHECKPOINT_DIR.mkdir(exist_ok=True, parents=True) 
 
-    #### model init ####
+    # model init
     model_kwargs = {
-        'layer_sizes': [32, 64, 128, 256, 512],
-        'in_channels': 3,
-        'out_channels': 4,
-        'conv_per_block': 3,
-        'dropout_rate': 0.1,
-        'hidden_activation': torch.nn.GELU(),
-        'output_activation': None
+        "pretrained_model_name": args.pretrained_model_name,
+        "num_labels": 3,
+        "pretrained": True,
+        "ignore_mismatched_sizes": True,
+        "local_files_only": os.getenv("HF_HUB_OFFLINE", "0") == "1",
     }
-    unet = BuildUNet.UNet(**model_kwargs).to(device)
-    model = torch.nn.parallel.DistributedDataParallel(unet,
-                                                      device_ids=[0]) 
+    model = Mask2FormerSemantic(**model_kwargs).to(device)
+    model_kwargs["config_dict"] = model.model.config.to_dict()
+    model_kwargs["pretrained"] = False
+    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[0])
 
     #### Data Loading ####
     # define options
@@ -314,13 +353,7 @@ def main():
     val_loader = make_loader(val_generator, args.batch_size, val_sampler, args.num_workers)
 
     #### Train Model ####
-    # define our loss function, optimizer
-    reload(WeightedCrossEntropy)
-    if use_distance_weights:
-        loss_function = WeightedCrossEntropy.WeightedCrossEntropy(device=device)
-    else:
-        loss_function = torch.nn.CrossEntropyLoss()
-        
+    # define optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     # lr options
@@ -342,17 +375,20 @@ def main():
     # training loop
     # refresh log
     if is_main(rank):
-        run_name = wandb_run_name("unet", args, world_size, max_lr)
+        model_name = f"mask2former_{pretrained_model_slug(args.pretrained_model_name)}"
+        run_name = wandb_run_name(model_name, args, world_size, max_lr)
         wandb.init(
             project="pennycress-unet",
             entity=os.getenv("WANDB_ENTITY"),
             name=run_name,
-            group=f"unet_dw-{args.distance_weights}",
-            tags=wandb_run_tags("unet", args, world_size),
+            group=f"{model_name}_dw-{args.distance_weights}",
+            tags=wandb_run_tags(model_name, args, world_size),
             config={
-                "model_name": "unet",
+                "model_name": model_name,
+                "pretrained_model_name": args.pretrained_model_name,
                 "distance_weights": args.distance_weights,
                 "border_weight": border_weight,
+                "loss_type": "mask2former_native_query_mask",
                 "checkpoint_dir": str(CHECKPOINT_DIR),
                 "batch_size": args.batch_size,
                 "world_size": world_size,
@@ -389,8 +425,8 @@ def main():
                 for (xbt, ybt), (xbv, ybv) in zip(train_loader, val_loader):
                     xbt, ybt = xbt.to(device, non_blocking=True), ybt.to(device, non_blocking=True)
                     xbv, ybv = xbv.to(device, non_blocking=True), ybv.to(device, non_blocking=True)
-                    train_loss_sum += loss_function(model(xbt), ybt).item()
-                    val_loss_sum += loss_function(model(xbv), ybv).item()
+                    train_loss_sum += mask2former_loss(model, xbt, ybt, device).item()
+                    val_loss_sum += mask2former_loss(model, xbv, ybv, device).item()
                     train_count += 1
                     val_count += 1
                     eval_batches += 1
@@ -469,7 +505,7 @@ def main():
                 # update the model
                 xb, yb = xb.to(device, non_blocking=True), yb.to(device, non_blocking=True)
 
-                loss = loss_function(model(xb), yb)
+                loss = mask2former_loss(model, xb, yb, device)
 
                 nan_flag = torch.tensor(int(torch.isnan(loss).item()), device=device)
                 dist.all_reduce(nan_flag, op=dist.ReduceOp.MAX)
