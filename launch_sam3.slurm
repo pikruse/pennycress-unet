@@ -2,7 +2,7 @@
 #SBATCH -A SYB114
 #SBATCH -J sam3
 #SBATCH -N 1 
-#SBATCH -t 14:00:00
+#SBATCH -t 10:00:00
 #SBATCH -p extended
 #SBATCH -C nvme
 #SBATCH -o logs/%x-%j.out # Out Path
@@ -34,8 +34,25 @@ export TORCH_HOME="${MODEL_CACHE_ROOT}/torch"
 export XDG_CACHE_HOME="${MODEL_CACHE_ROOT}/xdg"
 mkdir -p "$HUGGINGFACE_HUB_CACHE" "$TORCH_HOME/hub/checkpoints" "$XDG_CACHE_HOME"
 
+### optional local secrets ###
+HF_ENV_FILE=${HF_ENV_FILE:-.env}
+if [[ -f "$HF_ENV_FILE" ]]; then
+    set -a
+    source "$HF_ENV_FILE"
+    set +a
+fi
+
+if [[ -n "${HUGGING_FACE_HUB_TOKEN:-}" && -z "${HF_TOKEN:-}" ]]; then
+    export HF_TOKEN="${HUGGING_FACE_HUB_TOKEN}"
+fi
+
+if [[ -z "${HF_TOKEN:-}" ]]; then
+    echo "ERROR: HF_TOKEN is not set. Put HF_TOKEN=hf_... in ${HF_ENV_FILE}, or export HF_TOKEN before sbatch." >&2
+    exit 1
+fi
+
 export SAM3_MODEL_NAME=${SAM3_MODEL_NAME:-facebook/sam3}
-export SAM3_ENCODER_IMAGE_SIZE=${SAM3_ENCODER_IMAGE_SIZE:-560}
+export SAM3_ENCODER_IMAGE_SIZE=${SAM3_ENCODER_IMAGE_SIZE:-128}
 export SAM3_DECODER_CHANNELS=${SAM3_DECODER_CHANNELS:-256}
 export SAM3_LORA_R=${SAM3_LORA_R:-8}
 export SAM3_LORA_ALPHA=${SAM3_LORA_ALPHA:-16}
@@ -65,7 +82,7 @@ model = Sam3Custom(
     pretrained=True,
     ignore_mismatched_sizes=True,
     use_lora=True,
-    encoder_image_size=int(os.getenv("SAM3_ENCODER_IMAGE_SIZE", "560")),
+    encoder_image_size=int(os.getenv("SAM3_ENCODER_IMAGE_SIZE", "128")),
     decoder_channels=int(os.getenv("SAM3_DECODER_CHANNELS", "256")),
     lora_r=int(os.getenv("SAM3_LORA_R", "8")),
     lora_alpha=int(os.getenv("SAM3_LORA_ALPHA", "16")),

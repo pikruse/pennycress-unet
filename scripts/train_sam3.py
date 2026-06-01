@@ -73,7 +73,7 @@ def parse_args():
         "--pretrained_model_name",
         default=os.getenv("SAM3_MODEL_NAME", "facebook/sam3"),
     )
-    p.add_argument("--encoder_image_size", type=int, default=560)
+    p.add_argument("--encoder_image_size", type=int, default=128)
     p.add_argument("--decoder_channels", type=int, default=256)
     p.add_argument("--lora_r", type=int, default=8)
     p.add_argument("--lora_alpha", type=int, default=16)

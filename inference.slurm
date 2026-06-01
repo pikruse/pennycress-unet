@@ -4,7 +4,6 @@
 #SBATCH -N 1
 #SBATCH -t 01:00:00
 #SBATCH -p batch
-#SBATCH -q debug
 #SBATCH -C nvme
 #SBATCH -o logs/%x-%j.out
 #SBATCH -e logs/%x-%j.err

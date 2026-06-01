@@ -139,7 +139,7 @@ class Sam3Custom(torch.nn.Module):
         lora_dropout: float = 0.05,
         lora_target_modules: list[str] | None = None,
         lora_target_keywords: tuple[str, ...] = DEFAULT_LORA_TARGET_KEYWORDS,
-        encoder_image_size: int | None = 560,
+        encoder_image_size: int | None = 128,
         decoder_channels: int = 256,
         image_mean: tuple[float, float, float] = DEFAULT_IMAGE_MEAN,
         image_std: tuple[float, float, float] = DEFAULT_IMAGE_STD,
@@ -355,6 +355,7 @@ class Sam3Custom(torch.nn.Module):
 
     def _feature_map_from_outputs(self, outputs: Any) -> torch.Tensor:
         for attr in (
+            "fpn_hidden_states",
             "feature_maps",
             "features",
             "image_embeddings",
