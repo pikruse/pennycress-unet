@@ -68,8 +68,9 @@ MODEL_SPECS = {
     "sam3": ModelSpec(
         key="sam3",
         label="sam3",
-        kind="predictions",
+        kind="torch",
         prediction_format="rgb",
+        checkpoint_dir_template="checkpoints/sam3_{distance_weights}",
     ),
     "mask2former": ModelSpec(
         key="mask2former",
@@ -209,6 +210,8 @@ def detect_model_from_path(path: Path | None) -> str | None:
         return "segformer"
     if "mask2former" in path_str:
         return "mask2former"
+    if "sam3" in path_str or "sam_3" in path_str:
+        return "sam3"
     if "deeplab" in path_str:
         return "deeplabv3plus"
     if "nnunet" in path_str or "nnu_net" in path_str:
@@ -233,7 +236,7 @@ def detect_model_from_checkpoint(checkpoint: dict, model_kwargs: dict, checkpoin
         return "deeplabv3plus"
 
     path_model = detect_model_from_path(checkpoint_path)
-    if path_model in {"unet", "deeplabv3plus", "segformer", "mask2former"}:
+    if path_model in {"unet", "deeplabv3plus", "segformer", "mask2former", "sam3"}:
         return path_model
 
     raise ValueError(
@@ -278,6 +281,14 @@ def build_torch_model(model_key: str, model_kwargs: dict) -> torch.nn.Module:
         model_kwargs["pretrained"] = False
         model_kwargs["local_files_only"] = True
         return Mask2FormerSemantic(**model_kwargs)
+
+    if model_key == "sam3":
+        from utils.Sam3Custom import Sam3Custom
+
+        model_kwargs = dict(model_kwargs)
+        model_kwargs["pretrained"] = False
+        model_kwargs["local_files_only"] = True
+        return Sam3Custom(**model_kwargs)
 
     import segmentation_models_pytorch as smp
 
